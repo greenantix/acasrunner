@@ -1,20 +1,32 @@
 import * as chokidar from 'chokidar';
 import { ActivityEvent } from './activity-service';
+import { getIndexingService } from './vector-storage';
+import path from 'path';
 
 export interface FileSystemMonitorConfig {
   watchPaths: string[];
   ignored?: string[];
   ignoreInitial?: boolean;
+  enableVectorIndexing?: boolean;
+  projectId?: string;
+  indexingDelay?: number;
 }
 
 export class FileSystemMonitor {
   private watcher: any | null = null;
   private config: FileSystemMonitorConfig;
   private onActivity: (event: ActivityEvent) => void;
+  private indexingService?: any;
+  private indexingQueue = new Map<string, NodeJS.Timeout>();
 
   constructor(config: FileSystemMonitorConfig, onActivity: (event: ActivityEvent) => void) {
     this.config = config;
     this.onActivity = onActivity;
+    
+    // Initialize indexing service if vector indexing is enabled
+    if (this.config.enableVectorIndexing) {
+      this.indexingService = getIndexingService(this.config.projectId || 'default');
+    }
   }
 
   start(): void {
@@ -57,13 +69,6 @@ export class FileSystemMonitor {
       });
   }
 
-  stop(): void {
-    if (this.watcher) {
-      this.watcher.close();
-      this.watcher = null;
-      this.emitSystemEvent('File system monitoring stopped');
-    }
-  }
 
   private handleFileEvent(changeType: 'created' | 'modified' | 'deleted', filePath: string): void {
     const relativePath = this.getRelativePath(filePath);
@@ -83,6 +88,11 @@ export class FileSystemMonitor {
         severity: 'low',
       },
     });
+
+    // Handle vector indexing for code files
+    if (this.config.enableVectorIndexing && this.indexingService) {
+      this.handleVectorIndexing(changeType, filePath);
+    }
   }
 
   private handleDirectoryEvent(changeType: 'created' | 'deleted', dirPath: string): void {
@@ -143,5 +153,102 @@ export class FileSystemMonitor {
 
   private generateId(): string {
     return `fs_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private handleVectorIndexing(changeType: 'created' | 'modified' | 'deleted', filePath: string): void {
+    // Check if file is a code file that should be indexed
+    if (!this.isCodeFile(filePath)) {
+      return;
+    }
+
+    // Cancel any pending indexing for this file
+    const existingTimeout = this.indexingQueue.get(filePath);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    if (changeType === 'deleted') {
+      // Immediately remove from vector database
+      this.indexingService.removeFile(filePath).catch((error: Error) => {
+        console.error(`Failed to remove vector embeddings for ${filePath}:`, error);
+        this.onActivity({
+          id: this.generateId(),
+          timestamp: new Date(),
+          type: 'error',
+          source: 'vector-indexing',
+          message: `Failed to remove embeddings for deleted file: ${this.getFileName(filePath)}`,
+          details: {
+            filePath: this.getRelativePath(filePath),
+            error: error.message,
+            severity: 'medium',
+          },
+        });
+      });
+    } else if (changeType === 'created' || changeType === 'modified') {
+      // Debounced indexing for created/modified files
+      const delay = this.config.indexingDelay || 2000;
+      const timeout = setTimeout(() => {
+        this.indexingQueue.delete(filePath);
+        
+        this.indexingService.indexFile(filePath).then(() => {
+          this.onActivity({
+            id: this.generateId(),
+            timestamp: new Date(),
+            type: 'system_event',
+            source: 'vector-indexing',
+            message: `Indexed file: ${this.getFileName(filePath)}`,
+            details: {
+              filePath: this.getRelativePath(filePath),
+              action: 'indexed',
+              severity: 'low',
+            },
+          });
+        }).catch((error: Error) => {
+          console.error(`Failed to index file ${filePath}:`, error);
+          this.onActivity({
+            id: this.generateId(),
+            timestamp: new Date(),
+            type: 'error',
+            source: 'vector-indexing',
+            message: `Failed to index file: ${this.getFileName(filePath)}`,
+            details: {
+              filePath: this.getRelativePath(filePath),
+              error: error.message,
+              severity: 'medium',
+            },
+          });
+        });
+      }, delay);
+
+      this.indexingQueue.set(filePath, timeout);
+    }
+  }
+
+  private isCodeFile(filePath: string): boolean {
+    const ext = path.extname(filePath).toLowerCase();
+    const codeExtensions = [
+      '.ts', '.tsx', '.js', '.jsx',
+      '.py', '.java', '.cpp', '.c', '.cs',
+      '.go', '.rs', '.php', '.rb', '.swift',
+      '.kt', '.dart', '.scala', '.clj',
+      '.vue', '.svelte', '.html', '.css',
+      '.sql', '.md', '.yaml', '.yml', '.json'
+    ];
+    
+    return codeExtensions.includes(ext);
+  }
+
+  stop(): void {
+    // Clear all pending indexing timeouts
+    for (const timeout of this.indexingQueue.values()) {
+      clearTimeout(timeout);
+    }
+    this.indexingQueue.clear();
+
+    if (this.watcher) {
+      this.watcher.close();
+      this.watcher = null;
+      this.emitSystemEvent('File system monitoring stopped');
+    }
   }
 }

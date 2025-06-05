@@ -1,6 +1,7 @@
 import { FirebaseCollections, COLLECTIONS } from '../firebase/collections';
 import { collection, doc, getDoc, setDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getSQLiteVecService } from '../../services/vector-storage';
 
 // Migration interface
 export interface Migration {
@@ -101,6 +102,34 @@ export class DatabaseMigrationService {
         await this.removeAnalyticsSystem();
       },
       dependencies: ['1.3.0']
+    });
+
+    // Migration 6: Vector storage system
+    this.addMigration({
+      version: '2.0.0',
+      name: 'vector_storage_system',
+      description: 'Initialize SQLite-vec database for code embeddings',
+      up: async () => {
+        await this.initializeVectorStorage();
+      },
+      down: async () => {
+        await this.removeVectorStorage();
+      },
+      dependencies: ['1.4.0']
+    });
+
+    // Migration 7: Vector storage configuration
+    this.addMigration({
+      version: '2.1.0',
+      name: 'vector_storage_config',
+      description: 'Add vector storage configuration and settings',
+      up: async () => {
+        await this.addVectorStorageConfig();
+      },
+      down: async () => {
+        await this.removeVectorStorageConfig();
+      },
+      dependencies: ['2.0.0']
     });
   }
 
@@ -404,6 +433,128 @@ export class DatabaseMigrationService {
 
   private async removeAnalyticsSystem(): Promise<void> {
     console.log('Removing analytics system (rollback)');
+  }
+
+  private async initializeVectorStorage(): Promise<void> {
+    console.log('Initializing SQLite-vec vector storage system...');
+    
+    try {
+      const vectorService = getSQLiteVecService();
+      await vectorService.initialize();
+      
+      // Set initial metadata
+      await vectorService.setMetadata('schema_version', '2.0.0');
+      await vectorService.setMetadata('initialized_at', new Date().toISOString());
+      await vectorService.setMetadata('migration_source', 'database_migration_2.0.0');
+      
+      console.log('✅ SQLite-vec database initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize vector storage:', error);
+      throw error;
+    }
+  }
+
+  private async removeVectorStorage(): Promise<void> {
+    console.log('Removing vector storage system (rollback)');
+    // Note: In a real implementation, you might want to backup the database
+    // before removing it or just mark it as inactive
+    try {
+      const vectorService = getSQLiteVecService();
+      await vectorService.setMetadata('status', 'inactive');
+      await vectorService.setMetadata('rolled_back_at', new Date().toISOString());
+      console.log('✅ Vector storage marked as inactive');
+    } catch (error) {
+      console.error('❌ Failed to rollback vector storage:', error);
+      throw error;
+    }
+  }
+
+  private async addVectorStorageConfig(): Promise<void> {
+    // Add vector storage system settings
+    await FirebaseCollections.setSetting({
+      category: 'vector_storage',
+      key: 'embedding_model',
+      value: 'nomic-embed-text-v1.5',
+      type: 'string',
+      description: 'Embedding model for code vectorization',
+      isSystem: true,
+      updatedBy: 'migration_2.1.0'
+    });
+
+    await FirebaseCollections.setSetting({
+      category: 'vector_storage',
+      key: 'embedding_dimensions',
+      value: 384,
+      type: 'number',
+      description: 'Dimensions of embedding vectors',
+      isSystem: true,
+      updatedBy: 'migration_2.1.0'
+    });
+
+    await FirebaseCollections.setSetting({
+      category: 'vector_storage',
+      key: 'lm_studio_url',
+      value: 'http://localhost:1234/v1/embeddings',
+      type: 'string',
+      description: 'LM Studio API URL for embedding generation',
+      isSystem: true,
+      updatedBy: 'migration_2.1.0'
+    });
+
+    await FirebaseCollections.setSetting({
+      category: 'vector_storage',
+      key: 'batch_size',
+      value: 32,
+      type: 'number',
+      description: 'Batch size for embedding generation',
+      isSystem: true,
+      updatedBy: 'migration_2.1.0'
+    });
+
+    await FirebaseCollections.setSetting({
+      category: 'vector_storage',
+      key: 'similarity_threshold',
+      value: 0.7,
+      type: 'number',
+      description: 'Minimum similarity threshold for search results',
+      isSystem: true,
+      updatedBy: 'migration_2.1.0'
+    });
+
+    await FirebaseCollections.setSetting({
+      category: 'vector_storage',
+      key: 'auto_indexing_enabled',
+      value: true,
+      type: 'boolean',
+      description: 'Enable automatic indexing of code changes',
+      isSystem: true,
+      updatedBy: 'migration_2.1.0'
+    });
+
+    await FirebaseCollections.setSetting({
+      category: 'vector_storage',
+      key: 'indexing_file_patterns',
+      value: ['**/*.{ts,tsx,js,jsx,py,java,cpp,c,cs,go,rs,php,rb,swift,kt,dart,scala}'],
+      type: 'array',
+      description: 'File patterns to include in automatic indexing',
+      isSystem: true,
+      updatedBy: 'migration_2.1.0'
+    });
+
+    await FirebaseCollections.setSetting({
+      category: 'vector_storage',
+      key: 'indexing_exclude_patterns',
+      value: ['**/node_modules/**', '**/.*/**', '**/dist/**', '**/build/**', '**/target/**'],
+      type: 'array',
+      description: 'File patterns to exclude from indexing',
+      isSystem: true,
+      updatedBy: 'migration_2.1.0'
+    });
+  }
+
+  private async removeVectorStorageConfig(): Promise<void> {
+    console.log('Removing vector storage configuration (rollback)');
+    // In a real implementation, you'd query and delete specific settings
   }
 
   // Get migration status

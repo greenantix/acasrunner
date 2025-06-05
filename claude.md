@@ -1,319 +1,283 @@
-# ACAS Windows Implementation Guide - Claude Code Edition
+# ACAS Windows Implementation Guide
 
-This guide is designed for users with **Claude Code** access, which can handle the technical implementation automatically while you focus on configuration and usage.
+Based on comprehensive research of database options, local models, technical
+implementation patterns, and Windows-specific considerations, here are the
+optimal solutions for setting up an AI Coding Assistant System on Windows with
+8GB VRAM + 32GB RAM constraints.
 
-## Core Architecture (Automated via Claude Code)
+## Core Architecture Recommendations
 
-**Database Solution**: SQLite-vec for native Windows support and code embedding storage
-**Local Model Platform**: LM Studio with Windows optimization and CUDA 12.8 support  
-**Embedding Model**: Nomic Embed Text v1.5 (1-2GB VRAM, optimized for code)
+**Database Solution**: SQLite-vec emerges as the optimal choice for Windows ACAS
+implementation, offering native Windows support, minimal setup complexity, and
+features specifically suited for code embedding storage and search.
 
-## Prerequisites (Manual Setup Required)
+**Local Model Platform**: LM Studio is recommended over Ollama due to superior
+Windows integration, comprehensive GUI interface, and optimized CUDA 12.8
+support for RTX GPUs.
+
+**Embedding Model**: Nomic Embed Text v1.5 provides the best balance of
+performance, VRAM efficiency (~1-2GB), and code understanding capabilities.
+
+## Technical Implementation Plan (Claude.md)
+
+### Architecture Overview
+
+The ACAS system consists of four primary components:
+
+**Embedding Generation Layer**
+
+- LM Studio running Nomic Embed Text v1.5 (GGUF format)
+- OpenAI-compatible REST API on localhost:1234
+- Supports 768-dimensional embeddings with Matryoshka scaling
+- Expected performance: 75+ embeddings/second with 2-3GB VRAM usage
+
+**Vector Storage Layer**
+
+- SQLite-vec for high-performance vector operations
+- Binary quantization for 32x storage reduction
+- Metadata filtering for file types, projects, and languages
+- Real-time indexing with ACID compliance
+
+**Code Analysis Pipeline**
+
+- Tree-sitter parsers for language-specific code understanding
+- Function/class boundary detection with context preservation
+- Incremental indexing with file system monitoring
+- Batch processing for large codebases
+
+**API and Interface Layer**
+
+- FastAPI-based REST endpoints for search and indexing
+- WebSocket support for real-time updates
+- VS Code extension integration patterns
+- Optional desktop interface using Tauri
+
+### Database Schema Design
+
+```sql
+CREATE VIRTUAL TABLE code_embeddings USING vec0(
+    file_id TEXT PRIMARY KEY,
+    code_embedding FLOAT[384],  -- Binary quantized
+    file_type TEXT,
+    language TEXT,
+    project_id TEXT,
+    last_modified INTEGER,
+    -- Auxiliary columns for source storage
+    +source_code TEXT,
+    +file_path TEXT,
+    +function_name TEXT,
+    +context_info TEXT
+);
+```
+
+### Real-Time Indexing Implementation
+
+The system uses Windows-native file system monitoring with debounced updates:
+
+**File Watcher**: Watchdog with Windows-specific optimizations for NTFS
+**Processing Pipeline**: Async processing with ThreadPoolExecutor for
+CPU-intensive tasks **Update Strategy**: Incremental updates with hash-based
+change detection **Error Handling**: Retry mechanisms with exponential backoff
+
+### Performance Optimization Strategies
+
+**Memory Management**
+
+- Connection pooling for database operations
+- Embedding cache with LRU eviction
+- Batch processing for multiple file updates
+- Memory monitoring with automatic garbage collection
+
+**GPU Utilization**
+
+- CUDA graph enablement (35% throughput improvement)
+- Flash attention optimization (15% performance boost)
+- Mixed precision inference (FP16)
+- Automatic VRAM management
+
+**Windows-Specific Optimizations**
+
+- Windows Defender exclusions for performance
+- NVIDIA Control Panel GPU optimization
+- Virtual memory configuration for large models
+- Process priority and affinity settings
+
+### Integration Patterns
+
+**VS Code Extension Architecture**
+
+- TypeScript extension with Python backend
+- Real-time code completion via Language Server Protocol
+- Context-aware suggestions based on current file
+- Configurable search scopes and filters
+
+**API Design**
+
+- OpenAI-compatible endpoints for easy integration
+- RESTful architecture with async/await patterns
+- Rate limiting and authentication support
+- Comprehensive error handling and logging
+
+## Human-Friendly Setup Guide (human.md)
+
+### Prerequisites and Installation
 
 **System Requirements**
+
 - Windows 10/11 with 8GB VRAM + 32GB RAM
-- NVIDIA GPU (RTX 20-series or newer)
-- 50GB free SSD space
-- Admin access for initial setup
+- NVIDIA GPU with RTX 20-series or newer
+- 50GB free SSD space for models and data
+- Python 3.11+ (for optimal SQLite compatibility)
 
-**Step 1: Install Dependencies**
-```powershell
-# Install via winget (run as admin)
-winget install Python.Python.3.11
-winget install Microsoft.WindowsTerminal
-winget install Git.Git
-```
+**Step 1: Environment Setup**
 
-**Step 2: LM Studio Setup**
-1. Download and install LM Studio from [lmstudio.ai](https://lmstudio.ai)
-2. Launch LM Studio → Search for "nomic-embed-text-v1.5"
-3. Download the GGUF model (should be ~500MB)
-4. Start the local server (port 1234) with the embedding model loaded
+1. Install Python 3.11 via winget: `winget install Python.Python.3.11`
+1. Install Windows Terminal: `winget install Microsoft.WindowsTerminal`
+1. Configure PowerShell 7 as default shell
+1. Set up project directory with virtual environment
 
-## Claude Code Implementation Tasks
+**Step 2: LM Studio Installation**
 
-Once you have Claude Code access, provide these instructions to automate the entire ACAS system setup:
+1. Download LM Studio installer from lmstudio.ai
+1. Install with standard Windows procedure (no admin required)
+1. Launch application and configure GPU settings
+1. Enable CUDA acceleration and Flash Attention
+1. Download Nomic Embed Text v1.5 model from built-in browser
 
-### Task 1: Project Structure Creation
-```
-Create a complete ACAS project structure with:
-- Python virtual environment setup
-- FastAPI backend with embedding endpoints
-- SQLite-vec database initialization
-- File system monitoring service
-- VS Code extension scaffolding
-- Configuration management system
-- Logging and error handling
-- Windows service wrapper
-```
+**Step 3: Database Setup**
 
-### Task 2: Core Implementation
-```
-Implement the following components:
+1. Install SQLite-vec: `pip install sqlite-vec`
+1. Verify installation with simple test script
+1. Create initial database schema for code embeddings
+1. Configure metadata indexes for efficient filtering
 
-1. EMBEDDING SERVICE:
-   - Connect to LM Studio API (localhost:1234)
-   - Batch processing for multiple files
-   - Error handling and retry logic
-   - Performance monitoring
+**Step 4: ACAS Service Installation**
 
-2. VECTOR DATABASE:
-   - SQLite-vec schema with metadata
-   - Binary quantization for storage efficiency
-   - CRUD operations for embeddings
-   - Search functionality with filtering
+1. Clone ACAS repository or create new project
+1. Install dependencies: `pip install -r requirements.txt`
+1. Configure environment variables for model paths
+1. Test API connectivity with LM Studio
+1. Initialize vector database with sample code
 
-3. CODE ANALYSIS PIPELINE:
-   - Tree-sitter integration for parsing
-   - Function/class boundary detection
-   - Language-specific chunking strategies
-   - Incremental indexing system
+### Configuration and Optimization
 
-4. FILE MONITORING:
-   - Watchdog implementation for Windows
-   - Debounced update handling
-   - Change detection via file hashing
-   - Batch processing for efficiency
-```
+**Windows Defender Exclusions**
 
-### Task 3: API Layer Development
-```
-Create FastAPI application with:
-- OpenAI-compatible embedding endpoints
-- RESTful search API with filters
-- WebSocket support for real-time updates
-- Rate limiting and authentication
-- Comprehensive error responses
-- Health check endpoints
-- Swagger documentation
-```
+- Add Python installation directory
+- Exclude project workspace folders
+- Add model cache directories
+- Configure via PowerShell or Windows Security GUI
 
-### Task 4: VS Code Extension
-```
-Build VS Code extension with:
-- TypeScript/JavaScript implementation
-- Language Server Protocol integration
-- Real-time code completion
-- Context-aware suggestions
-- Search interface panel
-- Configuration settings UI
-- Status bar indicators
-```
+**GPU Optimization**
 
-### Task 5: Windows Integration
-```
-Implement Windows-specific features:
-- Windows Service registration
-- Startup automation
-- Registry configuration
-- Windows Defender exclusions script
-- Performance optimization utilities
-- System tray application
-- Installer package (NSIS or WiX)
-```
+- NVIDIA Control Panel: Set “Prefer maximum performance”
+- Configure CUDA environment variables
+- Monitor GPU utilization with Task Manager
+- Adjust model offloading based on VRAM usage
 
-### Task 6: Configuration System
-```
-Create configuration management:
-- YAML/JSON config files
-- Environment variable support
-- Project-specific settings
-- Model path management
-- GPU optimization settings
-- Logging configuration
-- Performance tuning parameters
-```
+**Performance Tuning**
 
-### Task 7: Testing and Validation
-```
-Implement comprehensive testing:
-- Unit tests for all components
-- Integration tests for API endpoints
-- Performance benchmarks
-- Memory usage monitoring
-- GPU utilization tests
-- File system stress tests
-- Windows compatibility validation
-```
+- Virtual memory: Set to 1.5x RAM initial size
+- File system: Enable long path support
+- Network: Configure Windows Firewall for localhost APIs
+- Process priority: Set to “High” for AI processes
 
-## User Configuration Steps (Post-Implementation)
+### Usage Patterns and Workflows
 
-After Claude Code completes the implementation, you'll need to:
+**Initial Codebase Indexing**
 
-**Step 1: Environment Configuration**
-```powershell
-# Navigate to project directory
-cd acas-system
+1. Point ACAS to project directory
+1. Configure file type filters (.py, .js, .java, etc.)
+1. Start batch indexing process
+1. Monitor progress via web interface or logs
+1. Verify search functionality with test queries
 
-# Activate virtual environment
-.\venv\Scripts\Activate.ps1
+**Daily Development Workflow**
 
-# Install dependencies (should be automated)
-pip install -r requirements.txt
+1. ACAS runs as background service
+1. Real-time indexing of file changes
+1. VS Code extension provides inline suggestions
+1. Search interface for code exploration
+1. Context-aware assistance for debugging
 
-# Configure environment variables
-copy .env.example .env
-# Edit .env with your paths and settings
-```
+**Maintenance and Updates**
 
-**Step 2: Windows Optimization**
-```powershell
-# Run automated Windows optimization script
-.\scripts\optimize-windows.ps1
+- Weekly model updates via LM Studio
+- Monthly database optimization
+- Regular backup of vector database
+- Monitor system performance and logs
 
-# Add Windows Defender exclusions
-.\scripts\setup-defender-exclusions.ps1
+### Troubleshooting Common Issues
 
-# Configure GPU settings
-.\scripts\optimize-gpu.ps1
-```
+**Installation Problems**
 
-**Step 3: Database Initialization**
-```powershell
-# Initialize vector database
-python -m acas.database.init
+- Python SQLite version conflicts: Use Python 3.11+
+- CUDA not detected: Verify driver installation
+- Port conflicts: Check for conflicting services on 1234/11434
+- Permission errors: Run package managers as administrator
 
-# Test embedding generation
-python -m acas.test.embeddings
+**Performance Issues**
 
-# Verify LM Studio connection
-python -m acas.test.api_connectivity
-```
+- Slow embedding generation: Check GPU utilization
+- High memory usage: Adjust batch sizes and caching
+- File watching failures: Check Windows file system limits
+- API timeouts: Increase request timeout values
 
-**Step 4: Service Installation**
-```powershell
-# Install as Windows service
-.\scripts\install-service.ps1
+**Windows-Specific Fixes**
 
-# Start ACAS service
-net start acas-service
+- Long path errors: Enable via Group Policy
+- Antivirus interference: Add exclusions
+- Service startup failures: Check Windows Event Log
+- Network access issues: Configure firewall rules
 
-# Verify service status
-.\scripts\check-service-status.ps1
-```
+### Scaling and Advanced Configuration
 
-**Step 5: VS Code Extension**
-```powershell
-# Install extension from local package
-code --install-extension ./extensions/acas-extension.vsix
+**Multi-Project Setup**
 
-# Configure extension settings
-# Open VS Code → Settings → Extensions → ACAS
-```
+- Partition keys for project isolation
+- Shared model instances for efficiency
+- Project-specific metadata schemas
+- Role-based access control
 
-## Usage Workflow (Automated)
+**Team Deployment**
 
-**Initial Project Indexing**
-1. Open VS Code in your project directory
-2. Command palette → "ACAS: Index Current Project"
-3. Monitor progress in output panel
-4. Test search functionality
+- Centralized model serving
+- Shared vector database instances
+- Configuration management
+- Usage monitoring and analytics
 
-**Daily Development**
-- ACAS runs automatically as background service
-- Real-time file monitoring and indexing
-- Context-aware code completion in VS Code
-- Semantic search via command palette
+**Integration Options**
 
-**Maintenance**
-- Automated weekly optimization
-- Model updates via LM Studio
-- Log rotation and cleanup
-- Performance monitoring dashboard
-
-## Claude Code Prompt Templates
-
-Use these specific prompts when working with Claude Code:
-
-**For Initial Setup:**
-```
-I need you to create a complete AI Coding Assistant System (ACAS) for Windows. Please implement:
-
-1. A FastAPI backend that connects to LM Studio (localhost:1234) for embeddings
-2. SQLite-vec database for vector storage with metadata
-3. File system monitoring for real-time indexing
-4. VS Code extension for code completion
-5. Windows service wrapper for background operation
-
-Requirements:
-- Support for multiple programming languages
-- Efficient memory usage (8GB VRAM constraint)
-- Production-ready error handling
-- Comprehensive configuration system
-- Windows-specific optimizations
-
-Please create the complete project structure and implement all components.
-```
-
-**For Troubleshooting:**
-```
-My ACAS system is experiencing [specific issue]. Please:
-1. Diagnose the problem by checking logs and configuration
-2. Implement fixes for the identified issues
-3. Add monitoring to prevent future occurrences
-4. Update documentation with troubleshooting steps
-
-System details: [provide error messages, logs, system specs]
-```
-
-**For Feature Enhancement:**
-```
-Please enhance my ACAS system with [specific feature]:
-- Analyze current codebase structure
-- Implement the new feature with proper integration
-- Add configuration options and documentation
-- Create tests to validate functionality
-- Update VS Code extension if needed
-```
+- VS Code extension for real-time assistance
+- JetBrains IDE plugins via Language Server Protocol
+- Web interface for code exploration
+- API integration with existing tools
 
 ## Expected Performance and Outcomes
 
-**System Performance** (Automated monitoring via Claude Code)
+**System Performance**
+
 - Embedding generation: 75+ vectors/second
-- Search latency: <500ms response times
-- Memory usage: 6-8GB total system usage
+- Search latency: Sub-second response times
+- Memory usage: 6-8GB total (including OS)
 - VRAM utilization: 2-3GB for embedding model
 
 **Development Benefits**
-- Context-aware code completion
-- Semantic search across entire codebase
-- Pattern recognition for debugging
-- Automatic documentation discovery
-- Cross-project code reuse identification
+
+- Context-aware code suggestions
+- Semantic code search across projects
+- Pattern recognition for debugging assistance
+- Documentation and example discovery
 
 **Maintenance Overhead**
-- Initial setup with Claude Code: 1-2 hours (mostly automated)
-- Daily maintenance: Fully automated
-- Updates and optimization: Handled by Claude Code on request
 
-## Advanced Claude Code Tasks
+- Initial setup: 4-6 hours
+- Daily maintenance: Minimal (automated)
+- Weekly updates: 30 minutes
+- Monthly optimization: 1-2 hours
 
-**Multi-Project Management:**
-```
-Extend ACAS to handle multiple projects with:
-- Project isolation and switching
-- Shared model instances for efficiency
-- Project-specific configurations
-- Cross-project search capabilities
-```
-
-**Team Deployment:**
-```
-Create team deployment package with:
-- Centralized model serving
-- Shared vector database
-- User authentication system
-- Usage analytics dashboard
-- Configuration management
-```
-
-**Custom Integrations:**
-```
-Integrate ACAS with [specific tools]:
-- API endpoints for external tools
-- Custom embedding models
-- Specialized code analysis
-- Integration testing suite
-```
-
-This approach leverages Claude Code's direct system access to handle all the complex implementation details while you focus on configuration and usage. The system becomes a powerful, automated coding assistant tailored specifically for your Windows development environment.
+This implementation provides a robust, performant AI coding assistant system
+optimized for Windows development environments while maintaining the simplicity
+that coding hobbyists require. The architecture balances functionality with
+resource efficiency, ensuring smooth operation within the specified hardware
+constraints.
