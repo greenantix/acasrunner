@@ -3,6 +3,7 @@ import { ErrorPatternAnalyzer, ErrorPattern } from './error-patterns';
 import { providerManager } from './llm-providers/provider-manager';
 import { LLMRequest } from './llm-providers/types';
 import { escalateCodingProblem } from '@/ai/flows/escalate-coding-problem';
+import { PluginRegistry } from './plugin-system/plugin-registry';
 
 export interface EscalationRule {
   id: string;
@@ -61,10 +62,15 @@ export class EscalationManager {
   private escalationHistory: EscalationEvent[] = [];
   private rules: EscalationRule[] = [];
   private isProcessing = false;
+  private pluginRegistry?: PluginRegistry;
 
   constructor() {
     this.errorAnalyzer = new ErrorPatternAnalyzer();
     this.initializeDefaultRules();
+  }
+
+  setPluginRegistry(registry: PluginRegistry): void {
+    this.pluginRegistry = registry;
   }
 
   private initializeDefaultRules(): void {
@@ -131,6 +137,11 @@ export class EscalationManager {
     this.isProcessing = true;
     
     try {
+      // Notify plugins about the escalation event
+      if (this.pluginRegistry) {
+        await this.notifyPlugins('escalation_started', { event });
+      }
+
       // Analyze the event for problems
       const problem = await this.analyzeProblem(event);
       
@@ -149,8 +160,22 @@ export class EscalationManager {
       for (const rule of matchingRules) {
         await this.escalateToAI(problem, rule);
       }
+
+      // Notify plugins about completion
+      if (this.pluginRegistry) {
+        await this.notifyPlugins('escalation_completed', { 
+          event, 
+          problem, 
+          rulesTriggered: matchingRules.length 
+        });
+      }
     } catch (error) {
       console.error('Error processing escalation event:', error);
+      
+      // Notify plugins about the error
+      if (this.pluginRegistry) {
+        await this.notifyPlugins('escalation_error', { event, error: error.message });
+      }
     } finally {
       this.isProcessing = false;
     }
@@ -431,6 +456,73 @@ Provide a brief explanation and suggested actions.`,
     if (!filePath) return undefined;
     const parts = filePath.split('.');
     return parts.length > 1 ? parts.pop() : undefined;
+  }
+
+  // Plugin integration methods
+  
+  private async notifyPlugins(eventType: string, data: any): Promise<void> {
+    if (!this.pluginRegistry) return;
+
+    const plugins = this.pluginRegistry.getAllPlugins();
+    const notifications = plugins.map(async (pluginInstance) => {
+      try {
+        // Check if plugin has escalation event handlers
+        const plugin = pluginInstance.plugin as any;
+        if (plugin.onEscalationEvent && typeof plugin.onEscalationEvent === 'function') {
+          await plugin.onEscalationEvent(eventType, data, this.pluginRegistry!.getPluginAPI());
+        }
+      } catch (error) {
+        console.error(`Error notifying plugin ${pluginInstance.plugin.id}:`, error);
+      }
+    });
+
+    await Promise.allSettled(notifications);
+  }
+
+  async requestAssistance(prompt: string, context?: any): Promise<string> {
+    try {
+      const result = await escalateCodingProblem({
+        error: prompt,
+        context: context ? JSON.stringify(context, null, 2) : ''
+      });
+      return result.explanation;
+    } catch (error) {
+      throw new Error(`AI assistance request failed: ${error.message}`);
+    }
+  }
+
+  async escalateIssue(issue: string, severity: 'low' | 'medium' | 'high', context?: any): Promise<void> {
+    const escalationEvent: EscalationEvent = {
+      id: `plugin-escalation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      activityEventId: 'plugin-generated',
+      timestamp: new Date(),
+      problemType: 'plugin_escalation',
+      severity,
+      provider: 'claude',
+      context: context || {},
+      aiResponse: '',
+      suggestions: [],
+      status: 'pending',
+      confidence: 0.9
+    };
+
+    try {
+      const aiResult = await this.requestAssistance(issue, context);
+      escalationEvent.aiResponse = aiResult;
+      escalationEvent.status = 'resolved';
+      escalationEvent.suggestions = ['Review AI analysis', 'Implement suggested fixes'];
+    } catch (error) {
+      escalationEvent.aiResponse = `Failed to get AI assistance: ${error.message}`;
+      escalationEvent.status = 'escalated_to_human';
+      escalationEvent.suggestions = ['Manual review required'];
+    }
+
+    this.escalationHistory.push(escalationEvent);
+
+    // Notify human if high severity
+    if (severity === 'high') {
+      await this.notifyHuman(escalationEvent);
+    }
   }
 
   // Public API methods
