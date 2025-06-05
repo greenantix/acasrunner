@@ -1,15 +1,5 @@
 /** @type {import('next').NextConfig} */
 
-// Add this console.log at the very top of the file, before any other code.
-console.log(
-  'Loading next.config.ts, NODE_ENV:',
-  process.env.NODE_ENV,
-  'Turbopack active via env:',
-  !!process.env.NEXT_TURBOPACK, // Turbopack sets this env var
-  'Turbopack active via CLI:',
-  process.argv.includes('--turbo') || process.argv.includes('--turbopack') // Check CLI args
-);
-
 const nextConfig = {
   experimental: {
     // turbopack removed for build compatibility
