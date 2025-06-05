@@ -20,7 +20,8 @@ export function ThemeSwitcher() {
   const availableThemes = themes.filter(t => t !== 'system'); // We don't use system preference
   
   const themeLabels: Record<string, { name: string; description: string }> = {
-    'blueprint': { name: 'Blueprint', description: 'Clean light theme with professional blue accents' },
+    'light': { name: 'Light', description: 'Clean light theme with professional blue accents' },
+    'dark': { name: 'Dark', description: 'Standard dark theme with teal accents' },
     'theme-terminal': { name: 'Terminal', description: 'Classic green-on-black terminal styling' },
     'theme-claudemode': { name: 'Claude Mode', description: 'Elegant purple-accented theme' },
     'theme-acas-runner': { name: 'ACAS Runner', description: 'Bold orange theme matching the brand' },

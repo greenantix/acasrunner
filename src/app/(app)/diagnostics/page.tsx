@@ -7,7 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertTriangle, Lightbulb, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { suggestCodeFixes, SuggestCodeFixesInput, SuggestCodeFixesOutput } from "@/ai/flows/suggest-code-fixes-flow";
+// Removed direct AI flow import - using API routes instead
+interface SuggestCodeFixesOutput {
+  explanation?: string;
+  suggestedCode: string;
+  diff?: string;
+  confidenceScore?: number;
+}
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -36,14 +42,24 @@ export default function DiagnosticsPage() {
     setIsLoading(true);
     setAiSuggestions(null);
 
-    const input: SuggestCodeFixesInput = {
-      error: error.message,
-      fileContext: error.codeSnippet || `Error found in ${error.filePath} at line ${error.lineNumber}. Severity: ${error.severity}.`,
-      language: "typescript",
-    };
-
     try {
-      const result = await suggestCodeFixes(input);
+      const response = await fetch('/api/ai/suggest-fix', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          error: error.message,
+          fileContext: error.codeSnippet || `Error found in ${error.filePath} at line ${error.lineNumber}. Severity: ${error.severity}.`,
+          language: "typescript",
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get AI suggestions');
+      }
+      
+      const result = await response.json();
       setAiSuggestions(result);
       toast({
         title: "AI Suggestions Received",

@@ -136,6 +136,26 @@ export class ClaudeProvider extends BaseLLMProvider {
     return metadata;
   }
 
+  async generateResponse(request: LLMRequest): Promise<LLMResponse> {
+    return this.sendRequest(request);
+  }
+
+  async *streamResponse(request: LLMRequest): AsyncIterable<string> {
+    // Implementation for streaming responses
+    const response = await this.sendRequest(request);
+    yield response.content;
+  }
+
+  async getAvailableModels(): Promise<string[]> {
+    return [
+      'claude-3-5-sonnet-20241022',
+      'claude-3-5-haiku-20241022',
+      'claude-3-opus-20240229',
+      'claude-3-sonnet-20240229',
+      'claude-3-haiku-20240307'
+    ];
+  }
+
   // Claude-specific helper for complex code analysis
   async analyzeCodeIssue(
     errorMessage: string, 

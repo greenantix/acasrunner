@@ -1,16 +1,20 @@
 // src/components/error-display-toast.tsx
 'use client';
 
-import {
-  escalateCodingProblem,
-  EscalateCodingProblemInput,
-  EscalateCodingProblemOutput,
-} from '@/ai/flows/escalate-coding-problem';
-import {
-  suggestCodeFixes,
-  SuggestCodeFixesInput,
-  SuggestCodeFixesOutput,
-} from '@/ai/flows/suggest-code-fixes-flow';
+// Removed direct AI flow imports - using API routes instead
+interface EscalateCodingProblemOutput {
+  explanation: string;
+  severity: string;
+  trace?: string[];
+}
+
+interface SuggestCodeFixesOutput {
+  suggestedCode: string;
+  explanation?: string;
+  diff?: string;
+  confidenceScore?: number;
+  trace?: string[];
+}
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,11 +46,22 @@ const ErrorDisplayToast: React.FC<ErrorDisplayToastProps> = ({ error, errorInfo,
     setIsLoadingExplanation(true);
     setExplanation(null);
     try {
-      const input: EscalateCodingProblemInput = {
-        error: error.message,
-        context: errorContext,
-      };
-      const result = await escalateCodingProblem(input);
+      const response = await fetch('/api/escalations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          error: error.message,
+          context: errorContext,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get explanation');
+      }
+      
+      const result = await response.json();
       setExplanation(result);
     } catch (e) {
       console.error('Error getting explanation:', e);
@@ -64,12 +79,23 @@ const ErrorDisplayToast: React.FC<ErrorDisplayToastProps> = ({ error, errorInfo,
     setIsLoadingFix(true);
     setSuggestedFix(null);
     try {
-      const input: SuggestCodeFixesInput = {
-        error: error.message,
-        fileContext: errorContext, // Use 'fileContext' as expected by the interface
-        language: 'typescript', // Add the required language property
-      };
-      const result = await suggestCodeFixes(input);
+      const response = await fetch('/api/ai/suggest-fix', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          error: error.message,
+          fileContext: errorContext,
+          language: 'typescript',
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get fix suggestion');
+      }
+      
+      const result = await response.json();
       setSuggestedFix(result);
     } catch (e) {
       console.error('Error getting fix suggestion:', e);

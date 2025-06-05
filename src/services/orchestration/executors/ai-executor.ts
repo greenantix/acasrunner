@@ -24,14 +24,14 @@ export class AIExecutor extends StepExecutor {
         enhancedPrompt = `${prompt}\n\nContext:\n${contextData}`;
       }
 
-      const response = await aiProvider.generateResponse(enhancedPrompt, {
-        model: model || 'default',
+      const response = await aiProvider.generateResponse({
+        prompt: enhancedPrompt,
         temperature: temperature || 0.7,
         maxTokens: maxTokens || 1000
       });
 
       return this.createSuccessResult({
-        response: response.text,
+        response: response.content,
         tokens: response.usage?.totalTokens,
         model: response.model || model,
         provider

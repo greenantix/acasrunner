@@ -116,10 +116,9 @@ export class ChatAIIntegration {
     }
 
     try {
-      // Add recent activity events
-      const recentActivities = await activityService.getRecentActivities(
-        this.ACTIVITY_CONTEXT_LIMIT
-      );
+      // Add recent activity events  
+      const allActivities = await activityService.getActivities();
+      const recentActivities = allActivities.slice(-this.ACTIVITY_CONTEXT_LIMIT);
 
       for (const activity of recentActivities) {
         // Only include relevant activities
@@ -128,12 +127,12 @@ export class ChatAIIntegration {
             type: 'activity',
             id: activity.id,
             title: activity.type,
-            content: activity.description,
+            content: activity.message,
             timestamp: activity.timestamp,
             metadata: {
               type: activity.type,
-              severity: activity.severity,
-              component: activity.component
+              severity: activity.details?.severity,
+              source: activity.source
             }
           });
         }
@@ -235,14 +234,14 @@ export class ChatAIIntegration {
       throw new Error(`Provider ${session.provider} not available`);
     }
 
-    const response = await provider.generateResponse(prompt, {
-      model: session.model,
+    const response = await provider.generateResponse({
+      prompt,
       temperature: session.settings.temperature,
       maxTokens: session.settings.maxTokens
     });
 
     return {
-      content: response.text,
+      content: response.content,
       tokens: response.usage?.totalTokens
     };
   }
@@ -260,15 +259,19 @@ export class ChatAIIntegration {
     }
 
     try {
-      await provider.streamResponse(prompt, {
-        model: session.model,
+      const streamGenerator = provider.streamResponse({
+        prompt,
         temperature: session.settings.temperature,
         maxTokens: session.settings.maxTokens
-      }, {
-        onChunk,
-        onComplete,
-        onError
       });
+
+      let fullContent = '';
+      for await (const chunk of streamGenerator) {
+        fullContent += chunk;
+        onChunk(chunk);
+      }
+      
+      onComplete();
     } catch (error) {
       onError(error as Error);
     }
@@ -297,7 +300,7 @@ export class ChatAIIntegration {
   private extractFileReferences(message: string): string[] {
     // Extract file paths from message
     const filePathRegex = /(?:src\/|\.\/|\/)[^\s]+\.[a-zA-Z]{1,4}/g;
-    const matches = message.match(filePathRegex) || [];
+    const matches: string[] = message.match(filePathRegex) || [];
     
     // Also look for quoted file paths
     const quotedRegex = /["`']([^"`']+\.[a-zA-Z]{1,4})["`']/g;
@@ -344,7 +347,7 @@ export class ChatAIIntegration {
 
   // Utility method to check if AI integration is available
   static isAvailable(session: ChatSession): boolean {
-    return providerManager.hasProvider(session.provider);
+    return providerManager.getProvider(session.provider) !== undefined;
   }
 
   // Method to get available models for a provider

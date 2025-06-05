@@ -1,0 +1,33 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "acas",
+    "genkit",
+    "googleai",
+    "nosniff",
+    "placehold",
+    "turbopack",
+    "Turbopack",
+    "TURBOPACK"
+  ],
+  "ignorePaths": [
+    "node_modules/**",
+    ".next/**",
+    "dist/**",
+    "build/**",
+    ".git/**",
+    "*.min.js",
+    "*.min.css",
+    "package-lock.json",
+    "yarn.lock"
+  ],
+  "dictionaries": [
+    "typescript",
+    "node",
+    "npm",
+    "html",
+    "css",
+    "javascript"
+  ]
+}

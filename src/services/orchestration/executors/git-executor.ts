@@ -8,7 +8,7 @@ export class GitExecutor extends StepExecutor {
   readonly description = 'Git version control operations like commit, push, pull, and status';
 
   async execute(step: WorkflowStep, context: ExecutionContext): Promise<StepResult> {
-    const { action, parameters } = step.action;
+    const { type: action, parameters } = step.action;
     
     try {
       switch (action) {
@@ -27,13 +27,13 @@ export class GitExecutor extends StepExecutor {
       }
     } catch (error) {
       return this.createFailureResult(
-        error instanceof Error ? error.message : 'Git operation failed'
+        error instanceof Error ? this.formatError(error) : 'Git operation failed'
       );
     }
   }
 
   async validate(step: WorkflowStep): Promise<ValidationResult> {
-    const { action, parameters } = step.action;
+    const { type: action, parameters } = step.action;
     
     switch (action) {
       case 'git.commit':
@@ -145,7 +145,7 @@ export class GitExecutor extends StepExecutor {
         output: result.stdout
       });
     } catch (error) {
-      return this.createFailureResult(`Git status failed: ${error.message}`);
+      return this.createFailureResult(`Git status failed: ${this.formatError(error)}`);
     }
   }
 
@@ -172,7 +172,7 @@ export class GitExecutor extends StepExecutor {
         output: result.stdout
       });
     } catch (error) {
-      return this.createFailureResult(`Git add failed: ${error.message}`);
+      return this.createFailureResult(`Git add failed: ${this.formatError(error)}`);
     }
   }
 
@@ -200,7 +200,7 @@ export class GitExecutor extends StepExecutor {
         output: result.stdout
       });
     } catch (error) {
-      return this.createFailureResult(`Git commit failed: ${error.message}`);
+      return this.createFailureResult(`Git commit failed: ${this.formatError(error)}`);
     }
   }
 
@@ -225,7 +225,7 @@ export class GitExecutor extends StepExecutor {
         output: result.stderr // Git push output goes to stderr
       });
     } catch (error) {
-      return this.createFailureResult(`Git push failed: ${error.message}`);
+      return this.createFailureResult(`Git push failed: ${this.formatError(error)}`);
     }
   }
 
@@ -250,7 +250,7 @@ export class GitExecutor extends StepExecutor {
         output: result.stdout
       });
     } catch (error) {
-      return this.createFailureResult(`Git pull failed: ${error.message}`);
+      return this.createFailureResult(`Git pull failed: ${this.formatError(error)}`);
     }
   }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { chatService } from '@/services/chat-service';
+import { providerManager } from '@/services/llm-providers/provider-manager';
 
 export async function GET(
   request: NextRequest,
@@ -81,6 +82,74 @@ export async function GET(
         success: false, 
         error: 'Failed to establish stream' 
       },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { message, context = [], settings = {} } = body;
+
+    // Verify session exists
+    const session = await chatService.getSession(id);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Session not found' },
+        { status: 404 }
+      );
+    }
+
+    // Find the best provider for this session
+    const provider = providerManager.getProvider(session.provider) ||
+      await providerManager.selectBestProvider('general', 'low');
+    
+    if (!provider) {
+      return NextResponse.json(
+        { error: 'No AI provider available' },
+        { status: 500 }
+      );
+    }
+
+    // Create conversation context
+    const contextMessages = context
+      .map((msg: { role: string; content: string }) => `${msg.role}: ${msg.content}`)
+      .join('\n\n');
+    
+    const contextPrompt = contextMessages ? 
+      `Previous conversation:\n${contextMessages}\n\n---\n\nUser: ${message}` : 
+      message;
+
+    // Send request to AI provider
+    const response = await provider.sendRequest({
+      prompt: contextPrompt,
+      temperature: settings.temperature || 0.7,
+      maxTokens: settings.maxTokens || 2000
+    });
+
+    // Save AI response to chat
+    await chatService.sendMessage(
+      id,
+      response.content,
+      'assistant'
+    );
+
+    return NextResponse.json({
+      success: true,
+      response: response.content,
+      provider: provider.getType(),
+      model: response.model || session.model
+    });
+
+  } catch (error) {
+    console.error('Error processing AI request:', error);
+    return NextResponse.json(
+      { error: 'Failed to process AI request' },
       { status: 500 }
     );
   }

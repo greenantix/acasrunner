@@ -67,7 +67,9 @@ class ActivityEscalationBridge {
           message: `Failed to process escalation for activity ${activity.id}: ${errorMessage}`,
           details: {
             severity: 'medium',
-            error: errorMessage,
+            error: errorMessage
+          },
+          metadata: {
             originalActivityId: activity.id
           }
         });

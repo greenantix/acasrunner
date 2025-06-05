@@ -2,8 +2,11 @@
 
 import { ActivityStream } from '@/components/activity-stream';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { activityService } from '@/services/client-activity-service';
 import { useEffect } from 'react';
+import { Database, Activity } from 'lucide-react';
 
 export default function DashboardPage() {
   useEffect(() => {
@@ -43,30 +46,75 @@ export default function DashboardPage() {
 
     addDemoEvents();
   }, []);
+  
   return (
     <div className="space-y-6" suppressHydrationWarning>
-      <h1 className="font-headline text-3xl font-semibold">Activity Monitor</h1>
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline text-2xl">Real-time Developer Activity</CardTitle>
-          <CardDescription>
-            Monitoring file changes, errors, and system events across your workspace in real-time.
-            <br />
-            <span className="text-xs text-muted-foreground">
-              ✅ Client-side error monitoring active • 📡 Server stream connected • 🔍 File watching
-              ready
-            </span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ActivityStream
-            maxHeight="calc(100vh - 20rem)"
-            showHeader={true}
-            showFilters={true}
-            autoScroll={true}
-          />
-        </CardContent>
-      </Card>
+      <div className="flex items-center gap-4">
+        <h1 className="font-headline text-3xl font-semibold">Activity Monitor</h1>
+        <Badge variant="outline" className="flex items-center gap-1">
+          <Database className="h-3 w-3" />
+          Firebase Integration Ready
+        </Badge>
+      </div>
+      
+      <Tabs defaultValue="local" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="local" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Local Stream
+          </TabsTrigger>
+          <TabsTrigger value="firebase" className="flex items-center gap-2" disabled>
+            <Database className="h-4 w-4" />
+            Firebase (Coming Soon)
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="local" className="space-y-4">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                <Activity className="h-6 w-6" />
+                Local Activity Stream
+              </CardTitle>
+              <CardDescription>
+                Local in-memory activity monitoring for this session only.
+                Firebase real-time integration will be enabled after fixing import issues.
+                <br />
+                <span className="text-xs text-muted-foreground">
+                  ✅ Client-side error monitoring active • 📡 Server stream connected • 🔍 File watching ready
+                </span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ActivityStream
+                maxHeight="calc(100vh - 20rem)"
+                showHeader={true}
+                showFilters={true}
+                autoScroll={true}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="firebase" className="space-y-4">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                <Database className="h-6 w-6" />
+                Firebase Real-time (Loading...)
+              </CardTitle>
+              <CardDescription>
+                Firebase integration is being set up. Please restart the dev server after the webpack changes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                Firebase real-time features coming soon...
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

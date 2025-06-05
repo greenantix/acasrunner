@@ -131,6 +131,26 @@ export class OpenAIProvider extends BaseLLMProvider {
     return metadata;
   }
 
+  async generateResponse(request: LLMRequest): Promise<LLMResponse> {
+    return this.sendRequest(request);
+  }
+
+  async *streamResponse(request: LLMRequest): AsyncIterable<string> {
+    // Implementation for streaming responses
+    const response = await this.sendRequest(request);
+    yield response.content;
+  }
+
+  async getAvailableModels(): Promise<string[]> {
+    return [
+      'gpt-4-turbo',
+      'gpt-4',
+      'gpt-3.5-turbo',
+      'gpt-4o',
+      'gpt-4o-mini'
+    ];
+  }
+
   // OpenAI-specific method for performance optimization
   async optimizePerformance(
     codeSnippet: string,

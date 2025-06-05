@@ -1,5 +1,27 @@
 // Core plugin system types
-import { ActivityEvent } from '@/services/client-activity-service';
+
+// Re-export ActivityEvent for plugin use
+export interface ActivityEvent {
+  id: string;
+  timestamp: Date;
+  type: 'file_change' | 'error' | 'user_action' | 'system_event' | 'plugin_event';
+  source: string;
+  message: string;
+  details?: {
+    filePath?: string;
+    changeType?: 'created' | 'modified' | 'deleted';
+    linesChanged?: { added: number; removed: number };
+    error?: string;
+    message?: string;
+    stack?: string;
+    level?: string;
+    errorStack?: string;
+    severity?: 'low' | 'medium' | 'high' | 'critical';
+    environment?: string;
+    exitCode?: number;
+  };
+  metadata?: Record<string, any>;
+}
 
 export interface Plugin {
   name: string;

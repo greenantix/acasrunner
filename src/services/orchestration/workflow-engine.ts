@@ -191,7 +191,7 @@ export class WorkflowEngine {
       context.stepResults.set(stepId, stepResult.output);
 
       // If step failed and error handling is set to fail, stop execution
-      if (!stepResult.success && step.errorHandling?.strategy === 'fail') {
+      if (stepResult.status === 'failure' && step.errorHandling?.strategy === 'fail') {
         return {
           executionId: context.executionId,
           workflowId: context.workflowId,
@@ -206,7 +206,7 @@ export class WorkflowEngine {
       }
 
       // Add output steps to queue based on conditions
-      if (stepResult.success || step.errorHandling?.strategy === 'continue') {
+      if (stepResult.status === 'success' || step.errorHandling?.strategy === 'continue') {
         for (const connection of step.connections.outputs) {
           const shouldExecute = await this.evaluateCondition(
             connection.condition, 

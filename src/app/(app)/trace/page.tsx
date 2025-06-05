@@ -7,7 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Lightbulb, PlayCircle, Bot, Sparkles, Loader2 } from "lucide-react";
-import { realTimeAiTrace, RealTimeAiTraceInput, RealTimeAiTraceOutput } from "@/ai/flows/real-time-ai-trace";
+// Removed direct AI flow import - using API routes instead
+interface RealTimeAiTraceInput {
+  input: string;
+  steps: string[];
+  output: string;
+  toolsUsed?: string[];
+  pluginChain?: string[];
+}
+
+interface RealTimeAiTraceOutput {
+  trace: string;
+}
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
@@ -55,7 +66,19 @@ export default function AiTracePage() {
     setIsLoading(true);
     setTraceOutput(null);
     try {
-      const result = await realTimeAiTrace(inputToUse || currentInput);
+      const response = await fetch('/api/ai/trace', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(inputToUse || currentInput),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate trace');
+      }
+      
+      const result = await response.json();
       setTraceOutput(result);
       toast({
         title: "AI Trace Generated",

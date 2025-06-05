@@ -1,4 +1,15 @@
 /** @type {import('next').NextConfig} */
+
+// Add this console.log at the very top of the file, before any other code.
+console.log(
+  'Loading next.config.ts, NODE_ENV:',
+  process.env.NODE_ENV,
+  'Turbopack active via env:',
+  !!process.env.NEXT_TURBOPACK, // Turbopack sets this env var
+  'Turbopack active via CLI:',
+  process.argv.includes('--turbo') || process.argv.includes('--turbopack') // Check CLI args
+);
+
 const nextConfig = {
   experimental: {
     // turbopack removed for build compatibility
@@ -28,58 +39,10 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  // Webpack configuration
-  webpack: (config: any, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }: any) => {
-    // Fix for chokidar and other Node.js modules
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        child_process: false,
-      };
-    }
 
-    // Suppress OpenTelemetry warnings and handlebars warnings
-    config.ignoreWarnings = [
-      {
-        message: /Critical dependency: the request of a dependency is an expression/,
-      },
-      {
-        message: /require.extensions is not supported by webpack/,
-      },
-    ];
-
-    // Bundle analyzer
-    if (process.env.ANALYZE === 'true') {
-      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
-      config.plugins.push(
-        new BundleAnalyzerPlugin({
-          analyzerMode: 'static',
-          openAnalyzer: false,
-          reportFilename: isServer ? '../analyze/server.html' : './analyze/client.html',
-        })
-      );
-    }
-
-    // Claude Code optimizations
-    if (dev) {
-      config.watchOptions = {
-        ...config.watchOptions,
-        ignored: [
-          '**/node_modules/**',
-          '**/.next/**',
-          '**/.git/**',
-          '**/.claude-cache/**',
-          '**/dist/**',
-          '**/*.log',
-        ],
-      };
-    }
-
-    return config;
-  },
+  // The webpack configuration block has been removed to test Turbopack compatibility.
+  // If Webpack-specific configurations are needed when not using Turbopack,
+  // you might need to conditionally apply them based on whether Turbopack is active.
 
   // Headers for security and performance
   async headers() {
@@ -132,8 +95,8 @@ const nextConfig = {
   // Performance optimizations
   productionBrowserSourceMaps: false,
 
-  // Output configuration
-  output: 'standalone',
+  // Output configuration (temporarily removed for Turbopack testing)
+  // output: 'standalone',
 
   // Claude Code specific settings
   outputFileTracingRoot: process.env.CLAUDE_CODE_PROJECT_ROOT || undefined,

@@ -3,6 +3,9 @@ import { ACASConnection } from './communication/acas-connection';
 import { ActivityMonitor } from './monitoring/activity-monitor';
 import { AIAssistant } from './ai/ai-assistant';
 import { WorkflowManager } from './workflows/workflow-manager';
+import { ACASCompletionProvider } from './providers/completion-provider';
+import { ACASHoverProvider } from './providers/hover-provider';
+import { ACASActivityTreeDataProvider, ACASWorkflowTreeDataProvider } from './providers/tree-data-provider';
 
 let acasConnection: ACASConnection;
 let activityMonitor: ActivityMonitor;
@@ -20,6 +23,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register commands
     registerCommands(context);
+
+    // Register providers
+    registerProviders(context);
 
     // Setup auto-connect if enabled
     const config = vscode.workspace.getConfiguration('acas');
@@ -136,6 +142,46 @@ function registerCommands(context: vscode.ExtensionContext) {
 
     // Setup event listeners
     setupEventListeners(context);
+}
+
+function registerProviders(context: vscode.ExtensionContext) {
+    // Register completion provider for supported languages
+    const completionProvider = new ACASCompletionProvider(aiAssistant);
+    const supportedLanguages = ['typescript', 'javascript', 'python', 'java', 'cpp', 'c'];
+    
+    supportedLanguages.forEach(language => {
+        const disposable = vscode.languages.registerCompletionItemProvider(
+            language,
+            completionProvider,
+            '.' // Trigger on dot
+        );
+        context.subscriptions.push(disposable);
+    });
+
+    // Register hover provider
+    const hoverProvider = new ACASHoverProvider(aiAssistant);
+    supportedLanguages.forEach(language => {
+        const disposable = vscode.languages.registerHoverProvider(language, hoverProvider);
+        context.subscriptions.push(disposable);
+    });
+
+    // Register tree data providers
+    const activityTreeProvider = new ACASActivityTreeDataProvider(acasConnection);
+    const workflowTreeProvider = new ACASWorkflowTreeDataProvider(acasConnection);
+
+    vscode.window.registerTreeDataProvider('acasActivityView', activityTreeProvider);
+    vscode.window.registerTreeDataProvider('acasWorkflowsView', workflowTreeProvider);
+
+    // Register refresh commands for tree views
+    const refreshActivityCommand = vscode.commands.registerCommand('acas.refreshActivity', () => {
+        activityTreeProvider.refresh();
+    });
+
+    const refreshWorkflowsCommand = vscode.commands.registerCommand('acas.refreshWorkflows', () => {
+        workflowTreeProvider.refresh();
+    });
+
+    context.subscriptions.push(refreshActivityCommand, refreshWorkflowsCommand);
 }
 
 function setupEventListeners(context: vscode.ExtensionContext) {

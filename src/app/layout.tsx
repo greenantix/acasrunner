@@ -30,7 +30,7 @@ export default function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="theme-acas-runner"
-          themes={['blueprint', 'theme-terminal', 'theme-claudemode', 'theme-acas-runner']}
+          themes={['light', 'dark', 'theme-terminal', 'theme-claudemode', 'theme-acas-runner']}
           enableSystem={false} 
         >
           {children}

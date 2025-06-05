@@ -32,7 +32,7 @@ export class GeminiProvider extends BaseLLMProvider {
       this.lastRequest = Date.now();
 
       return {
-        content: response.text(),
+        content: response.text,
         provider: 'gemini',
         model: this.config.model,
         usage: {
@@ -40,7 +40,7 @@ export class GeminiProvider extends BaseLLMProvider {
           completionTokens: 0,
           totalTokens: 0
         },
-        metadata: this.parseGeminiResponse(response.text())
+        metadata: this.parseGeminiResponse(response.text)
       };
     } catch (error) {
       throw new Error(`Gemini provider error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -158,6 +158,25 @@ Focus on practical solutions and compatibility matrix.
       temperature: 0.1,
       maxTokens: 1500
     });
+  }
+
+  async generateResponse(request: LLMRequest): Promise<LLMResponse> {
+    return this.sendRequest(request);
+  }
+
+  async *streamResponse(request: LLMRequest): AsyncIterable<string> {
+    // Implementation for streaming responses
+    const response = await this.sendRequest(request);
+    yield response.content;
+  }
+
+  async getAvailableModels(): Promise<string[]> {
+    return [
+      'gemini-1.5-pro',
+      'gemini-1.5-flash',
+      'gemini-pro',
+      'gemini-pro-vision'
+    ];
   }
 
   // Gemini-specific method for configuration troubleshooting

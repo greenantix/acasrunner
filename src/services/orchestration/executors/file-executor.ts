@@ -9,7 +9,7 @@ export class FileExecutor extends StepExecutor {
   readonly description = 'File system operations like read, write, copy, move, and delete';
 
   async execute(step: WorkflowStep, context: ExecutionContext): Promise<StepResult> {
-    const { action, parameters } = step.action;
+    const { type: action, parameters } = step.action;
     
     try {
       switch (action) {
@@ -34,13 +34,13 @@ export class FileExecutor extends StepExecutor {
       }
     } catch (error) {
       return this.createFailureResult(
-        error instanceof Error ? error.message : 'File operation failed'
+        error instanceof Error ? this.formatError(error) : 'File operation failed'
       );
     }
   }
 
   async validate(step: WorkflowStep): Promise<ValidationResult> {
-    const { action, parameters } = step.action;
+    const { type: action, parameters } = step.action;
     
     switch (action) {
       case 'file.read':
@@ -163,7 +163,7 @@ export class FileExecutor extends StepExecutor {
         encoding
       });
     } catch (error) {
-      return this.createFailureResult(`Failed to read file ${path}: ${error.message}`);
+      return this.createFailureResult(`Failed to read file ${path}: ${error instanceof Error ? this.formatError(error) : String(error)}`);
     }
   }
 
@@ -197,7 +197,7 @@ export class FileExecutor extends StepExecutor {
         operation: append ? 'append' : 'write'
       });
     } catch (error) {
-      return this.createFailureResult(`Failed to write file ${path}: ${error.message}`);
+      return this.createFailureResult(`Failed to write file ${path}: ${this.formatError(error)}`);
     }
   }
 
@@ -230,7 +230,7 @@ export class FileExecutor extends StepExecutor {
         lastModified: stats.mtime
       });
     } catch (error) {
-      return this.createFailureResult(`Failed to copy file from ${source} to ${destination}: ${error.message}`);
+      return this.createFailureResult(`Failed to copy file from ${source} to ${destination}: ${this.formatError(error)}`);
     }
   }
 
@@ -263,7 +263,7 @@ export class FileExecutor extends StepExecutor {
         lastModified: stats.mtime
       });
     } catch (error) {
-      return this.createFailureResult(`Failed to move file from ${source} to ${destination}: ${error.message}`);
+      return this.createFailureResult(`Failed to move file from ${source} to ${destination}: ${this.formatError(error)}`);
     }
   }
 
@@ -289,7 +289,7 @@ export class FileExecutor extends StepExecutor {
         deleted: true
       });
     } catch (error) {
-      return this.createFailureResult(`Failed to delete ${path}: ${error.message}`);
+      return this.createFailureResult(`Failed to delete ${path}: ${this.formatError(error)}`);
     }
   }
 
@@ -307,14 +307,14 @@ export class FileExecutor extends StepExecutor {
         lastModified: stats.mtime
       });
     } catch (error) {
-      if (error.code === 'ENOENT') {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
         return this.createSuccessResult({
           path,
           exists: false
         });
       }
       
-      return this.createFailureResult(`Failed to check if ${path} exists: ${error.message}`);
+      return this.createFailureResult(`Failed to check if ${path} exists: ${this.formatError(error)}`);
     }
   }
 
@@ -330,7 +330,7 @@ export class FileExecutor extends StepExecutor {
         count: files.length
       });
     } catch (error) {
-      return this.createFailureResult(`Failed to list files in ${directory}: ${error.message}`);
+      return this.createFailureResult(`Failed to list files in ${directory}: ${this.formatError(error)}`);
     }
   }
 
@@ -405,7 +405,7 @@ export class FileExecutor extends StepExecutor {
         lastModified: stats.mtime
       });
     } catch (error) {
-      return this.createFailureResult(`Failed to create directory ${path}: ${error.message}`);
+      return this.createFailureResult(`Failed to create directory ${path}: ${this.formatError(error)}`);
     }
   }
 }

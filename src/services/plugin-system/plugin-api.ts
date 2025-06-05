@@ -52,7 +52,8 @@ export class PluginAPIImpl {
         }
       },
       getRecentActivities: (limit = 50) => {
-        return this.activityService?.getRecentActivities(limit) || [];
+        const allActivities = this.activityService?.getActivities() || [];
+        return allActivities.slice(-limit);
       },
       subscribe: (handler: (event: ActivityEvent) => void) => {
         if (this.activityService) {
@@ -72,13 +73,11 @@ export class PluginAPIImpl {
         }
       },
       getHistory: (limit = 50) => {
-        return this.escalationManager?.getHistory(limit) || [];
+        // TODO: Implement getHistory in escalation manager
+        return [];
       },
       subscribe: (handler: (escalation: any) => void) => {
-        if (this.escalationManager) {
-          this.escalationManager.on('escalation', handler);
-          return () => this.escalationManager?.off('escalation', handler);
-        }
+        // TODO: Implement event system in escalation manager
         return () => {};
       }
     };

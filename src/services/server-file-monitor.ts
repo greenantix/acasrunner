@@ -1,5 +1,5 @@
 // Server-side file system monitor - runs on the server only
-import chokidar from 'chokidar';
+import chokidar, { FSWatcher } from 'chokidar';
 import path from 'path';
 import { EventEmitter } from 'events';
 
@@ -20,7 +20,7 @@ export interface ActivityEvent {
 }
 
 class ServerFileSystemMonitor extends EventEmitter {
-  private watcher: chokidar.FSWatcher | null = null;
+  private watcher: FSWatcher | null = null;
   private isWatching = false;
   private watchPaths: string[] = [];
 
@@ -72,10 +72,10 @@ class ServerFileSystemMonitor extends EventEmitter {
     });
 
     this.watcher
-      .on('add', (filePath) => this.handleFileEvent('created', filePath))
-      .on('change', (filePath) => this.handleFileEvent('modified', filePath))
-      .on('unlink', (filePath) => this.handleFileEvent('deleted', filePath))
-      .on('error', (error) => this.handleError(error))
+      .on('add', (filePath: string) => this.handleFileEvent('created', filePath))
+      .on('change', (filePath: string) => this.handleFileEvent('modified', filePath))
+      .on('unlink', (filePath: string) => this.handleFileEvent('deleted', filePath))
+      .on('error', (error: unknown) => this.handleError(error as Error))
       .on('ready', () => {
         this.isWatching = true;
         console.log('✅ File system monitoring started');

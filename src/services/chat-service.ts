@@ -9,7 +9,7 @@ import {
   query, 
   where, 
   orderBy, 
-  limit, 
+  limit as limitQuery, 
   startAfter,
   onSnapshot,
   serverTimestamp,
@@ -169,7 +169,7 @@ export class ChatService {
           collection(db, this.MESSAGES_COLLECTION),
           where('sessionId', '==', doc.id),
           orderBy('timestamp', 'desc'),
-          limit(1)
+          limitQuery(1)
         );
         const lastMessageSnap = await getDocs(messagesQuery);
         const lastMessage = lastMessageSnap.docs[0]?.data()?.content || 'No messages';
@@ -243,7 +243,7 @@ export class ChatService {
       );
 
       if (limit) {
-        q = query(q, limit(limit));
+        q = query(q, limitQuery(limit));
       }
 
       const snapshot = await getDocs(q);
@@ -457,7 +457,7 @@ export class ChatService {
   }
 
   // Search functionality
-  async searchMessages(query: string, sessionId?: string): Promise<ChatMessage[]> {
+  async searchMessages(searchQuery: string, sessionId?: string): Promise<ChatMessage[]> {
     try {
       let q = collection(db, this.MESSAGES_COLLECTION);
       
@@ -474,7 +474,7 @@ export class ChatService {
 
       // Client-side text search (for now)
       return allMessages.filter(message => 
-        message.content.toLowerCase().includes(query.toLowerCase())
+        message.content.toLowerCase().includes(searchQuery.toLowerCase())
       );
     } catch (error) {
       console.error('Error searching messages:', error);

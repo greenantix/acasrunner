@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ChatSession, ChatMessage, ChatSessionSummary } from "@/types/chat";
 import { chatService } from "@/services/chat-service";
+// Removed provider manager import - using API routes instead
 import { ChatSessionSidebar } from "@/components/chat/chat-session-sidebar";
 import { ChatHeader } from "@/components/chat/chat-header";
 import { ChatMessageList } from "@/components/chat/chat-message-list";
@@ -113,21 +114,55 @@ export default function ChatPage() {
       // Send user message
       await chatService.sendMessage(activeSession.id, content, 'user', attachments);
       
-      // TODO: Send to AI provider and stream response
-      // For now, simulate AI response
-      setTimeout(async () => {
-        try {
-          await chatService.sendMessage(
-            activeSession.id, 
-            `I received your message: "${content}". This is a placeholder response while AI integration is being implemented.`,
-            'assistant'
-          );
-        } catch (error) {
-          console.error('Error sending AI response:', error);
-        } finally {
-          setIsStreaming(false);
+      // Send to AI provider via API route
+      try {
+        // Create conversation context from recent messages
+        const recentMessages = messages
+          .slice(-10) // Last 10 messages for context
+          .map(msg => ({ role: msg.role, content: msg.content }));
+
+        const response = await fetch(`/api/chat/sessions/${activeSession.id}/stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: content,
+            context: recentMessages,
+            settings: {
+              temperature: activeSession.settings?.temperature || 0.7,
+              maxTokens: activeSession.settings?.maxTokens || 2000
+            }
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get AI response');
         }
-      }, 1000);
+
+        const result = await response.json();
+        
+        // The API route should handle saving the assistant response
+        // No need to save it here as it's already saved in the API
+
+      } catch (error) {
+        console.error('Error getting AI response:', error);
+        
+        // Send error message to chat
+        await chatService.sendMessage(
+          activeSession.id,
+          `I apologize, but I encountered an error processing your message: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+          'assistant'
+        );
+        
+        toast({
+          title: "AI Response Error",
+          description: "Failed to get AI response",
+          variant: "destructive"
+        });
+      } finally {
+        setIsStreaming(false);
+      }
 
       // Update session in sidebar
       const updatedSessions = sessions.map(s => 

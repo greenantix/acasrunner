@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { escalateCodingProblem } from '@/ai/flows/escalate-coding-problem';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +10,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Dynamically import the AI flow only on server side
+    const { escalateCodingProblem } = await import('@/ai/flows/escalate-coding-problem');
 
     // Use the escalate coding problem flow for analysis
     const result = await escalateCodingProblem({
