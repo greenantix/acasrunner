@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    turbo: {
+    turbopack: {
       rules: {
         '*.svg': {
           loaders: ['@svgr/webpack'],
@@ -10,21 +10,24 @@ const nextConfig = {
       },
     },
   },
-  
+
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn']
-    } : false,
+    removeConsole:
+      process.env.NODE_ENV === 'production'
+        ? {
+            exclude: ['error', 'warn'],
+          }
+        : false,
   },
-  
+
   images: {
     domains: ['placehold.co', 'via.placeholder.com'],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  
+
   // Webpack configuration
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
+  webpack: (config: any, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }: any) => {
     // Fix for chokidar and other Node.js modules
     if (!isServer) {
       config.resolve.fallback = {
@@ -35,7 +38,7 @@ const nextConfig = {
         child_process: false,
       };
     }
-    
+
     // Bundle analyzer
     if (process.env.ANALYZE === 'true') {
       const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
@@ -43,13 +46,11 @@ const nextConfig = {
         new BundleAnalyzerPlugin({
           analyzerMode: 'static',
           openAnalyzer: false,
-          reportFilename: isServer
-            ? '../analyze/server.html'
-            : './analyze/client.html',
+          reportFilename: isServer ? '../analyze/server.html' : './analyze/client.html',
         })
       );
     }
-    
+
     // Claude Code optimizations
     if (dev) {
       config.watchOptions = {
@@ -60,14 +61,14 @@ const nextConfig = {
           '**/.git/**',
           '**/.claude-cache/**',
           '**/dist/**',
-          '**/*.log'
+          '**/*.log',
         ],
       };
     }
-    
+
     return config;
   },
-  
+
   // Headers for security and performance
   async headers() {
     return [
@@ -94,7 +95,7 @@ const nextConfig = {
       },
     ];
   },
-  
+
   // Rewrites for API routes and Claude Code integration
   async rewrites() {
     return [
@@ -104,7 +105,7 @@ const nextConfig = {
       },
     ];
   },
-  
+
   // Redirects
   async redirects() {
     return [
@@ -115,13 +116,13 @@ const nextConfig = {
       },
     ];
   },
-  
+
   // Performance optimizations
   productionBrowserSourceMaps: false,
-  
+
   // Output configuration
   output: 'standalone',
-  
+
   // Claude Code specific settings
   outputFileTracingRoot: process.env.CLAUDE_CODE_PROJECT_ROOT || undefined,
 };

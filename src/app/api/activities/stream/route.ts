@@ -1,7 +1,5 @@
 import { NextRequest } from 'next/server';
-
-// This would be a proper SSE endpoint for real-time updates
-// For now, we'll create a simple mock that demonstrates the concept
+import { activityEscalationBridge } from '@/services/activity-escalation-bridge';
 
 export async function GET(request: NextRequest) {
   // Create a streaming response for Server-Sent Events

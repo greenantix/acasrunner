@@ -56,9 +56,8 @@ export default function ChatPage() {
     setIsLoading(true);
     setAiResponse(null);
     const userInput: EscalateCodingProblemInput = {
-      codingProblemDescription: data.codingProblemDescription,
-      errorLogs: data.errorLogs || "No error logs provided.",
-      fileEdits: data.fileEdits || "No file edits provided.",
+      error: data.codingProblemDescription,
+      context: `Error logs: ${data.errorLogs || "No error logs provided."}\nFile edits: ${data.fileEdits || "No file edits provided."}`,
     };
 
     // Add user message to chat
@@ -76,7 +75,7 @@ export default function ChatPage() {
       setChatHistory(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
-        content: result.suggestedSolution,
+        content: result.explanation,
         timestamp: new Date().toLocaleTimeString()
       }]);
       toast({

@@ -62,14 +62,14 @@ const escalateCodingProblemFlow = ai.defineFlow(
     if (!output) {
         return {
             explanation: "Mock AI: I was unable to determine the cause of the error from the provided information. Please ensure the error message and context are as complete as possible.",
-            severity: "medium",
+            severity: "medium" as const,
             trace: ["Received input", "AI processing failed to generate output", "Returned mock fallback"]
         }
     }
     
     return {
         explanation: output.explanation,
-        severity: output.severity || "medium", // Default severity if not provided
+        severity: (output.severity as "low" | "medium" | "high") || "medium", // Default severity if not provided
         trace: output.trace && output.trace.length > 0 ? output.trace : ["Analyzed input", "Generated explanation and severity"], // Mock trace
     };
   }

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/form";
 import { toast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle, HelpCircle, Loader2, RefreshCw, Wifi, WifiOff, XCircle } from "lucide-react";
+import { CheckCircle, HelpCircle, Loader2, RefreshCw, Wifi, WifiOff, XCircle, Brain, AlertTriangle, Activity } from "lucide-react";
 
 const llmSettingsSchema = z.object({
   provider: z.enum(["claude", "gpt", "ollama", "lmstudio"]),
@@ -46,6 +46,11 @@ export default function SettingsPage() {
     ollama: { status: "unknown", name: "Ollama" , defaultUrl: "http://localhost:11434"},
     lmstudio: { status: "unknown", name: "LM Studio", defaultUrl: "http://localhost:1234" },
   });
+
+  const [llmProviders, setLlmProviders] = useState<any[]>([]);
+  const [escalationStats, setEscalationStats] = useState<any>(null);
+  const [isLoadingProviders, setIsLoadingProviders] = useState(false);
+  const [isTestingEscalation, setIsTestingEscalation] = useState(false);
 
   const form = useForm<LlmSettingsFormValues>({
     resolver: zodResolver(llmSettingsSchema),
@@ -89,9 +94,95 @@ export default function SettingsPage() {
     }
   };
 
+  const fetchLlmProviders = async () => {
+    setIsLoadingProviders(true);
+    try {
+      const response = await fetch('/api/llm-providers');
+      if (response.ok) {
+        const data = await response.json();
+        setLlmProviders(data.providers || []);
+      }
+    } catch (error) {
+      console.error('Error fetching LLM providers:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch LLM provider configurations",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingProviders(false);
+    }
+  };
+
+  const fetchEscalationStats = async () => {
+    try {
+      const response = await fetch('/api/escalations');
+      if (response.ok) {
+        const data = await response.json();
+        setEscalationStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching escalation stats:', error);
+    }
+  };
+
+  const testEscalationFlow = async () => {
+    setIsTestingEscalation(true);
+    try {
+      const response = await fetch('/api/escalations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'test' })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Escalation Test Completed",
+          description: `Test result: ${JSON.stringify(data.testResult)}`,
+          icon: <Brain className="h-5 w-5 text-blue-500" />
+        });
+        fetchEscalationStats(); // Refresh stats
+      } else {
+        throw new Error('Test failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Escalation Test Failed",
+        description: `Error: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsTestingEscalation(false);
+    }
+  };
+
+  const testAllProviders = async () => {
+    try {
+      const response = await fetch('/api/llm-providers/test');
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Provider Tests Completed",
+          description: `Tested ${Object.keys(data.testResults).length} providers`,
+          icon: <CheckCircle className="h-5 w-5 text-green-500" />
+        });
+        console.log('Provider test results:', data.testResults);
+      }
+    } catch (error) {
+      toast({
+        title: "Provider Test Failed",
+        description: `Error: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     checkProviderStatus("ollama");
     checkProviderStatus("lmstudio");
+    fetchLlmProviders();
+    fetchEscalationStats();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
@@ -360,6 +451,129 @@ export default function SettingsPage() {
             </SelectContent>
           </Select>
           <p className="text-sm text-muted-foreground mt-2">Applying a preset may change some of the settings above (mocked).</p>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-xl font-headline flex items-center gap-2">
+            <Brain className="h-5 w-5 text-blue-500" />
+            AI Provider Status
+          </CardTitle>
+          <CardDescription>Current status of configured AI providers for escalation system.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isLoadingProviders ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading providers...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {llmProviders.length > 0 ? (
+                llmProviders.map((provider) => (
+                  <div key={provider.id} className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">{provider.name}</h4>
+                        <p className="text-sm text-muted-foreground">{provider.type} • {provider.model}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {provider.enabled ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-red-500" />
+                        )}
+                        <span className="text-xs">{provider.enabled ? 'Enabled' : 'Disabled'}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Specialties: {provider.specialties?.join(', ') || 'None specified'}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground">No AI providers configured yet.</p>
+              )}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={testAllProviders}>
+              <Brain className="mr-2 h-4 w-4" />
+              Test All Providers
+            </Button>
+            <Button variant="ghost" onClick={fetchLlmProviders}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-xl font-headline flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-orange-500" />
+            AI Escalation System
+          </CardTitle>
+          <CardDescription>Manage automatic AI escalation for error detection and resolution.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {escalationStats ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-3 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-blue-600">{escalationStats.total}</div>
+                <div className="text-sm text-muted-foreground">Total Escalations</div>
+              </div>
+              <div className="p-3 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-green-600">{escalationStats.byStatus?.resolved || 0}</div>
+                <div className="text-sm text-muted-foreground">Resolved</div>
+              </div>
+              <div className="p-3 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-orange-600">{escalationStats.byStatus?.pending || 0}</div>
+                <div className="text-sm text-muted-foreground">Pending</div>
+              </div>
+              <div className="p-3 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-purple-600">{Object.keys(escalationStats.byProvider || {}).length}</div>
+                <div className="text-sm text-muted-foreground">Active Providers</div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 border rounded-lg text-center text-muted-foreground">
+              <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No escalation data available yet.</p>
+            </div>
+          )}
+          
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={testEscalationFlow}
+              disabled={isTestingEscalation}
+            >
+              {isTestingEscalation ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <AlertTriangle className="mr-2 h-4 w-4" />
+              )}
+              Test Escalation Flow
+            </Button>
+            <Button variant="ghost" onClick={fetchEscalationStats}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh Stats
+            </Button>
+          </div>
+          
+          <div className="p-3 bg-muted rounded-lg">
+            <h4 className="font-medium mb-2">How AI Escalation Works:</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Monitors activity stream for errors and issues</li>
+              <li>• Analyzes error patterns and severity automatically</li>
+              <li>• Routes problems to appropriate AI models for analysis</li>
+              <li>• Provides intelligent suggestions and solutions</li>
+              <li>• Escalates critical issues to human attention</li>
+            </ul>
+          </div>
         </CardContent>
       </Card>
 

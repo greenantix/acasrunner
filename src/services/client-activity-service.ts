@@ -13,8 +13,13 @@ export interface ActivityEvent {
     filePath?: string;
     changeType?: 'created' | 'modified' | 'deleted';
     linesChanged?: { added: number; removed: number };
+    error?: string;
+    message?: string;
+    stack?: string;
+    level?: string;
     errorStack?: string;
     severity?: 'low' | 'medium' | 'high' | 'critical';
+    environment?: string;
   };
   metadata?: Record<string, any>;
 }
@@ -33,14 +38,27 @@ class ClientActivityService {
   private activities: ActivityEvent[] = [];
   private listeners: ((activities: ActivityEvent[]) => void)[] = [];
   private eventSource: EventSource | null = null;
+  private isInitialized = false;
 
   constructor() {
+    // Only initialize in browser environment
+    if (typeof window !== 'undefined') {
+      this.initialize();
+    }
+  }
+
+  private initialize() {
+    if (this.isInitialized) return;
+    
     this.initializeErrorHandling();
     this.connectToServer();
-    this.addMockData(); // Add some initial data for testing
+    this.addMockData();
+    this.isInitialized = true;
   }
 
   private connectToServer(): void {
+    if (typeof window === 'undefined') return;
+    
     try {
       // Connect to server-sent events for real-time updates
       this.eventSource = new EventSource('/api/activities/stream');
@@ -66,6 +84,8 @@ class ClientActivityService {
   }
 
   private initializeErrorHandling(): void {
+    if (typeof window === 'undefined') return;
+    
     // Global error handler
     window.addEventListener('error', (event) => {
       this.logError('JavaScript Error', event.error, 'high');
@@ -120,15 +140,15 @@ class ClientActivityService {
         severity,
       },
       metadata: {
-        userAgent: navigator.userAgent,
-        url: window.location.href,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+        url: typeof window !== 'undefined' ? window.location.href : 'unknown',
       }
     };
 
     this.addActivity(activity);
 
     // Show toast for high severity errors
-    if (severity === 'high' || severity === 'critical') {
+    if (typeof window !== 'undefined' && (severity === 'high' || severity === 'critical')) {
       toast({
         title: type,
         description: error?.message || error,
@@ -149,6 +169,8 @@ class ClientActivityService {
   }
 
   logUserAction(action: string, details?: any): void {
+    if (typeof window === 'undefined') return;
+    
     const activity: ActivityEvent = {
       id: this.generateId(),
       timestamp: new Date(),
@@ -202,6 +224,11 @@ class ClientActivityService {
   }
 
   subscribe(listener: (activities: ActivityEvent[]) => void): () => void {
+    // Ensure initialization in browser
+    if (typeof window !== 'undefined' && !this.isInitialized) {
+      this.initialize();
+    }
+    
     this.listeners.push(listener);
     
     // Immediately call with current activities

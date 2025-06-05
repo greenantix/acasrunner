@@ -1,35 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// In-memory storage for activities (in production, use a database)
-const activities: any[] = [];
+import { activityEscalationBridge } from '@/services/activity-escalation-bridge';
 
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    const limit = parseInt(url.searchParams.get('limit') || '100');
-    const type = url.searchParams.get('type');
-    const severity = url.searchParams.get('severity');
-
-    let filteredActivities = [...activities];
-
-    // Apply filters
-    if (type) {
-      filteredActivities = filteredActivities.filter(a => a.type === type);
-    }
+    const since = url.searchParams.get('since');
     
-    if (severity) {
-      filteredActivities = filteredActivities.filter(a => a.details?.severity === severity);
-    }
-
-    // Sort by timestamp (newest first) and limit
-    filteredActivities = filteredActivities
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, limit);
+    const sinceDate = since ? new Date(since) : undefined;
+    const activities = activityEscalationBridge.getActivitiesForStream(sinceDate);
+    const stats = activityEscalationBridge.getActivityStats();
 
     return NextResponse.json({
-      activities: filteredActivities,
-      total: activities.length,
-      filtered: filteredActivities.length,
+      activities,
+      stats,
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('Error fetching activities:', error);
@@ -55,17 +39,12 @@ export async function POST(request: NextRequest) {
     // Add timestamp and ID if not present
     const newActivity = {
       id: activity.id || `act_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: activity.timestamp || new Date().toISOString(),
+      timestamp: activity.timestamp ? new Date(activity.timestamp) : new Date(),
       ...activity,
     };
 
-    // Add to in-memory storage
-    activities.unshift(newActivity);
-
-    // Keep only last 1000 activities to prevent memory issues
-    if (activities.length > 1000) {
-      activities.splice(1000);
-    }
+    // Send to escalation bridge for processing
+    activityEscalationBridge.receiveFromClient(newActivity);
 
     console.log(`📝 New activity: ${newActivity.type} - ${newActivity.message}`);
 
@@ -84,19 +63,19 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Clear all activities
-    activities.length = 0;
+    // For now, we don't implement clearing since it's handled by the bridge
+    // In a real implementation, this would clear the database
     
-    console.log('🧹 Activities cleared');
+    console.log('🧹 Clear activities requested (not implemented in bridge mode)');
     
     return NextResponse.json({ 
       success: true, 
-      message: 'All activities cleared' 
+      message: 'Clear request noted - activities managed by escalation bridge' 
     });
   } catch (error) {
-    console.error('Error clearing activities:', error);
+    console.error('Error processing clear request:', error);
     return NextResponse.json(
-      { error: 'Failed to clear activities' },
+      { error: 'Failed to process clear request' },
       { status: 500 }
     );
   }
