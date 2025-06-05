@@ -6,7 +6,12 @@ import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: 'ACAS Runner',
-  description: 'AI Coding Assistant Supervisor',
+  description: 'AI Coding Assistant Supervisor - Real-time development workflow automation with AI',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -24,8 +29,8 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="acas-runner"
-          themes={['blueprint', 'terminal', 'claudemode', 'acas-runner']}
+          defaultTheme="theme-acas-runner"
+          themes={['blueprint', 'theme-terminal', 'theme-claudemode', 'theme-acas-runner']}
           enableSystem={false} 
         >
           {children}

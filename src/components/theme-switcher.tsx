@@ -18,6 +18,13 @@ export function ThemeSwitcher() {
   }, []);
 
   const availableThemes = themes.filter(t => t !== 'system'); // We don't use system preference
+  
+  const themeLabels: Record<string, { name: string; description: string }> = {
+    'blueprint': { name: 'Blueprint', description: 'Clean light theme with professional blue accents' },
+    'theme-terminal': { name: 'Terminal', description: 'Classic green-on-black terminal styling' },
+    'theme-claudemode': { name: 'Claude Mode', description: 'Elegant purple-accented theme' },
+    'theme-acas-runner': { name: 'ACAS Runner', description: 'Bold orange theme matching the brand' },
+  };
 
   if (!mounted) {
     return (
@@ -51,7 +58,14 @@ export function ThemeSwitcher() {
           {availableThemes.map((t) => (
             <div key={t} className="flex items-center space-x-3 p-3 border rounded-md hover:bg-muted/50 transition-colors">
               <RadioGroupItem value={t} id={`theme-${t}`} />
-              <Label htmlFor={`theme-${t}`} className="capitalize text-base cursor-pointer flex-1">{t}</Label>
+              <div className="flex-1 cursor-pointer">
+                <Label htmlFor={`theme-${t}`} className="text-base font-medium cursor-pointer">
+                  {themeLabels[t]?.name || t.replace('theme-', '').replace('-', ' ')}
+                </Label>
+                {themeLabels[t]?.description && (
+                  <p className="text-sm text-muted-foreground mt-1">{themeLabels[t].description}</p>
+                )}
+              </div>
             </div>
           ))}
         </RadioGroup>

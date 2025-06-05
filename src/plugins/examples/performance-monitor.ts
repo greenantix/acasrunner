@@ -105,7 +105,7 @@ const PerformanceMonitorPlugin: Plugin = {
   },
 
   async getPerformanceReport(api: PluginAPI) {
-    const data = await api.getData('performance_data', 'performance-monitor') || [];
+    const data = (await api.getData('performance_data', 'performance-monitor')) || [];
     
     if (data.length === 0) {
       return { status: 'no_data', message: 'No performance data available' };

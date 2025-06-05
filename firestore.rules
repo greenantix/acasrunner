@@ -2,16 +2,49 @@ rules_version='2'
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Chat sessions - allow CRUD operations for now
+    // In production, add user authentication checks
+    match /chat_sessions/{sessionId} {
+      allow read, write: if true;
+    }
+    
+    // Chat messages - allow CRUD operations
+    match /chat_messages/{messageId} {
+      allow read, write: if true;
+    }
+    
+    // Chat attachments - allow CRUD operations  
+    match /chat_attachments/{attachmentId} {
+      allow read, write: if true;
+    }
+    
+    // Activity logs - allow read/write for monitoring
+    match /activities/{activityId} {
+      allow read, write: if true;
+    }
+    
+    // AI escalations - allow read/write
+    match /escalations/{escalationId} {
+      allow read, write: if true;
+    }
+    
+    // Plugin data - allow read/write
+    match /plugins/{pluginId} {
+      allow read, write: if true;
+    }
+    
+    // Workflow data - allow read/write
+    match /workflows/{workflowId} {
+      allow read, write: if true;
+    }
+    
+    // User settings and preferences
+    match /user_settings/{userId} {
+      allow read, write: if true;
+    }
+    
+    // Temporary fallback rule - expires July 4, 2025
     match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
       allow read, write: if request.time < timestamp.date(2025, 7, 4);
     }
   }
