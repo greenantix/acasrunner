@@ -3,9 +3,10 @@ import { chatService } from '@/services/chat-service';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { content } = body;
 
@@ -19,7 +20,7 @@ export async function PUT(
       );
     }
 
-    await chatService.editMessage(params.id, content.trim());
+    await chatService.editMessage(id, content.trim());
     
     return NextResponse.json({ 
       success: true, 
@@ -39,10 +40,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await chatService.deleteMessage(params.id);
+    const { id } = await params;
+    await chatService.deleteMessage(id);
     
     return NextResponse.json({ 
       success: true, 

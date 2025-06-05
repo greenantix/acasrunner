@@ -37,10 +37,9 @@ export default function DiagnosticsPage() {
     setAiSuggestions(null);
 
     const input: SuggestCodeFixesInput = {
-      errorMessage: error.message,
-      codeSnippet: error.codeSnippet || "No code snippet available.",
-      filePath: error.filePath,
-      errorContext: `Error found in ${error.filePath} at line ${error.lineNumber}. Severity: ${error.severity}.`,
+      error: error.message,
+      fileContext: error.codeSnippet || `Error found in ${error.filePath} at line ${error.lineNumber}. Severity: ${error.severity}.`,
+      language: "typescript",
     };
 
     try {

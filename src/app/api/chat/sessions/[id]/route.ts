@@ -3,10 +3,11 @@ import { chatService } from '@/services/chat-service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await chatService.getSession(params.id);
+    const { id } = await params;
+    const session = await chatService.getSession(id);
     
     if (!session) {
       return NextResponse.json(
@@ -36,15 +37,16 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const updates = body;
 
-    await chatService.updateSession(params.id, updates);
+    await chatService.updateSession(id, updates);
     
-    const updatedSession = await chatService.getSession(params.id);
+    const updatedSession = await chatService.getSession(id);
     
     return NextResponse.json({ 
       success: true, 
@@ -64,10 +66,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await chatService.deleteSession(params.id);
+    const { id } = await params;
+    await chatService.deleteSession(id);
     
     return NextResponse.json({ 
       success: true, 

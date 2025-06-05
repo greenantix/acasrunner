@@ -65,3 +65,11 @@ keyfile.json
 # biOS specific (from your config)
 biOS/logs/
 biOS/data/temp/
+package-lock.json
+BUILD_FIX.md
+PLUGIN_SYSTEM_FIXES.md
+TYPESCRIPT_CACHE_FIX.md
+TYPESCRIPT_FIX_GUIDE.md
+fix-build.ps1
+*.ps1
+package-lock.json

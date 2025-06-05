@@ -139,8 +139,7 @@ export default function SettingsPage() {
         const data = await response.json();
         toast({
           title: "Escalation Test Completed",
-          description: `Test result: ${JSON.stringify(data.testResult)}`,
-          icon: <Brain className="h-5 w-5 text-blue-500" />
+          description: `Test result: ${JSON.stringify(data.testResult)}`
         });
         fetchEscalationStats(); // Refresh stats
       } else {
@@ -149,7 +148,7 @@ export default function SettingsPage() {
     } catch (error) {
       toast({
         title: "Escalation Test Failed",
-        description: `Error: ${error.message}`,
+        description: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {
@@ -164,15 +163,14 @@ export default function SettingsPage() {
         const data = await response.json();
         toast({
           title: "Provider Tests Completed",
-          description: `Tested ${Object.keys(data.testResults).length} providers`,
-          icon: <CheckCircle className="h-5 w-5 text-green-500" />
+          description: `Tested ${Object.keys(data.testResults).length} providers`
         });
         console.log('Provider test results:', data.testResults);
       }
     } catch (error) {
       toast({
         title: "Provider Test Failed",
-        description: `Error: ${error.message}`,
+        description: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -217,19 +215,19 @@ export default function SettingsPage() {
         if (isLocal && urlToTest) {
             const response = await fetch(urlToTest, { method: 'GET', mode: 'cors' });
             if (response.ok) {
-                toast({ title: "Connection Successful!", description: `${providerStatuses[provider as "ollama" | "lmstudio"].name} is responsive at ${urlToTest}.`, icon: <CheckCircle className="h-5 w-5 text-green-500" /> });
+                toast({ title: "Connection Successful!", description: `${providerStatuses[provider as "ollama" | "lmstudio"].name} is responsive at ${urlToTest}.` });
             } else {
-                toast({ title: "Connection Failed", description: `${providerStatuses[provider as "ollama" | "lmstudio"].name} did not respond as expected at ${urlToTest}. Status: ${response.status}`, variant: "destructive", icon: <XCircle className="h-5 w-5 text-red-500" /> });
+                toast({ title: "Connection Failed", description: `${providerStatuses[provider as "ollama" | "lmstudio"].name} did not respond as expected at ${urlToTest}. Status: ${response.status}`, variant: "destructive" });
             }
         } else if (!isLocal) {
             // Mock API call for cloud providers
             await new Promise(resolve => setTimeout(resolve, 1000));
-            toast({ title: "Connection Successful (Mock)", description: `Successfully connected to ${provider} (mocked).`, icon: <CheckCircle className="h-5 w-5 text-green-500" /> });
+            toast({ title: "Connection Successful (Mock)", description: `Successfully connected to ${provider} (mocked).` });
         } else if (isLocal && !urlToTest) {
              toast({ title: "Test Failed", description: `Base URL for ${provider} is not set.`, variant: "destructive"});
         }
     } catch (error) {
-        toast({ title: "Connection Error", description: `Could not connect to ${provider} at ${urlToTest}. Check console for details.`, variant: "destructive", icon: <XCircle className="h-5 w-5 text-red-500" /> });
+        toast({ title: "Connection Error", description: `Could not connect to ${provider} at ${urlToTest}. Check console for details.`, variant: "destructive" });
         console.error(`Error testing ${provider}:`, error);
     }
   };

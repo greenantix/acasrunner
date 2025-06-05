@@ -3,11 +3,12 @@ import { chatService } from '@/services/chat-service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Verify session exists
-    const session = await chatService.getSession(params.id);
+    const session = await chatService.getSession(id);
     if (!session) {
       return NextResponse.json(
         { 
@@ -22,7 +23,7 @@ export async function GET(
     const stream = new ReadableStream({
       start(controller) {
         // Subscribe to real-time messages for this session
-        const unsubscribe = chatService.subscribeToMessages(params.id, (messages) => {
+        const unsubscribe = chatService.subscribeToMessages(id, (messages) => {
           const data = JSON.stringify({
             type: 'messages',
             data: messages,
@@ -33,7 +34,7 @@ export async function GET(
         });
 
         // Subscribe to session updates
-        const unsubscribeSession = chatService.subscribeToSession(params.id, (sessionData) => {
+        const unsubscribeSession = chatService.subscribeToSession(id, (sessionData) => {
           if (sessionData) {
             const data = JSON.stringify({
               type: 'session',
@@ -59,7 +60,7 @@ export async function GET(
       },
       cancel() {
         // Client disconnected
-        console.log('Stream cancelled for session:', params.id);
+        console.log('Stream cancelled for session:', id);
       }
     });
 

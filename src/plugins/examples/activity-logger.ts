@@ -7,54 +7,98 @@ const ActivityLoggerPlugin: Plugin = {
   author: 'ACAS Team',
   description: 'Logs all activity events to console with timestamps',
   icon: '📝',
+  permissions: [
+    {
+      type: 'storage',
+      description: 'Store activity logs'
+    },
+    {
+      type: 'ui',
+      description: 'Display activity notifications'
+    }
+  ],
 
-  async initialize(api: PluginAPI) {
-    console.log('Activity Logger Plugin initialized');
+  async onLoad(api: PluginAPI) {
+    console.log('Activity Logger Plugin loaded');
+    api.log.info('Activity Logger plugin initialized');
+  },
+
+  async onEnable(api: PluginAPI) {
+    console.log('Activity Logger Plugin enabled');
     
-    // Subscribe to all activity events
-    await api.subscribeToActivities((event) => {
+    // Subscribe to activity events using the correct API
+    const unsubscribe = api.activity.subscribe((event) => {
       const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] Activity:`, {
+      api.log.info(`Activity logged: ${event.type}`, {
         type: event.type,
-        data: event.data,
+        source: event.source,
+        message: event.message,
         timestamp: event.timestamp
       });
       
       // Store activity in plugin storage
-      api.setData(`activity_${Date.now()}`, {
+      api.storage.set(`activity_${Date.now()}`, {
         ...event,
         loggedAt: timestamp
-      }, 'activity-logger');
+      }).catch(error => {
+        api.log.error('Failed to store activity', error);
+      });
     });
 
-    // Register a UI extension for the dashboard
-    await api.registerUIExtension('dashboard', {
-      name: 'Activity Summary',
-      component: () => ({
-        render: () => '<div>Activity Logger is running...</div>'
-      })
-    }, 'activity-logger');
+    // Store the unsubscribe function for cleanup
+    api.storage.set('_unsubscribe', unsubscribe);
 
-    api.showNotification('Activity Logger plugin activated', 'success');
+    api.ui.showNotification('Activity Logger plugin activated', 'success');
   },
 
-  async destroy() {
-    console.log('Activity Logger Plugin destroyed');
+  async onDisable(api: PluginAPI) {
+    console.log('Activity Logger Plugin disabled');
+    
+    // Clean up subscription
+    const unsubscribe = await api.storage.get('_unsubscribe');
+    if (unsubscribe && typeof unsubscribe === 'function') {
+      unsubscribe();
+    }
+    
+    api.ui.showNotification('Activity Logger plugin deactivated', 'info');
   },
 
-  // Plugin-specific methods
-  async getActivitySummary(api: PluginAPI) {
-    // Get all stored activities
-    const activities = [];
-    for (let i = 0; i < 100; i++) {
-      const key = `activity_${Date.now() - i * 1000}`;
-      const activity = await api.getData(key, 'activity-logger');
-      if (activity) {
-        activities.push(activity);
+  async onUnload(api: PluginAPI) {
+    console.log('Activity Logger Plugin unloaded');
+    api.log.info('Activity Logger plugin destroyed');
+  },
+
+  // Plugin commands
+  commands: [
+    {
+      id: 'get-activity-summary',
+      name: 'Get Activity Summary',
+      description: 'Get a summary of recent activities',
+      handler: async (args, api) => {
+        const activities = [];
+        
+        // Get recent activities (last 50)
+        for (let i = 0; i < 50; i++) {
+          const key = `activity_${Date.now() - i * 1000}`;
+          try {
+            const activity = await api.storage.get(key);
+            if (activity) {
+              activities.push(activity);
+            }
+          } catch (error) {
+            // Key doesn't exist, skip
+          }
+        }
+        
+        api.log.info(`Found ${activities.length} recent activities`);
+        return {
+          totalActivities: activities.length,
+          activities: activities.slice(0, 10), // Return last 10
+          summary: `Logged ${activities.length} activities`
+        };
       }
     }
-    return activities;
-  }
+  ]
 };
 
 export default ActivityLoggerPlugin;

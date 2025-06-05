@@ -1,4 +1,4 @@
-import { Plugin, PluginInstance, PluginStatus, PluginAPI } from '@/types/plugin';
+import { Plugin, PluginInstance, PluginStatus, PluginAPI, UIExtensionPoint, UIExtension } from '@/types/plugin';
 import { PluginAPIImpl } from './plugin-api';
 import { EventEmitter } from 'events';
 import { ActivityService } from '@/services/activity-service';
@@ -6,6 +6,7 @@ import { EscalationManager } from '@/services/escalation-manager';
 
 export class PluginRegistry extends EventEmitter {
   private plugins: Map<string, PluginInstance> = new Map();
+  private uiExtensions: Map<UIExtensionPoint, UIExtension[]> = new Map();
   private pluginAPI: PluginAPIImpl;
   private activityService?: ActivityService;
   private escalationManager?: EscalationManager;
@@ -27,7 +28,7 @@ export class PluginRegistry extends EventEmitter {
   }
 
   getPluginAPI(): PluginAPI {
-    return this.pluginAPI;
+    return this.pluginAPI.createPluginAPI('default');
   }
 
   async registerPlugin(plugin: Plugin): Promise<PluginInstance> {
@@ -254,6 +255,102 @@ export class PluginRegistry extends EventEmitter {
         }
       })
     );
+  }
+
+  async loadFromURL(url: string): Promise<void> {
+    console.log(`📥 Loading plugin from URL: ${url}`);
+    
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch plugin: ${response.statusText}`);
+      }
+      
+      const code = await response.text();
+      await this.loadFromCode(code, url);
+    } catch (error) {
+      console.error(`❌ Failed to load plugin from URL ${url}:`, error);
+      throw error;
+    }
+  }
+
+  async loadFromFile(file: File): Promise<void> {
+    console.log(`📁 Loading plugin from file: ${file.name}`);
+    
+    try {
+      const code = await file.text();
+      await this.loadFromCode(code, file.name);
+    } catch (error) {
+      console.error(`❌ Failed to load plugin from file ${file.name}:`, error);
+      throw error;
+    }
+  }
+
+  private async loadFromCode(code: string, source: string): Promise<void> {
+    try {
+      // Create a safe execution context
+      const pluginFunction = new Function('exports', 'require', 'module', code);
+      const exports = {};
+      const module = { exports };
+      
+      // Mock require function for basic dependencies
+      const require = (moduleName: string) => {
+        switch (moduleName) {
+          case 'react':
+            return typeof window !== 'undefined' ? (window as any).React : {};
+          default:
+            throw new Error(`Module '${moduleName}' is not available in plugin sandbox`);
+        }
+      };
+      
+      // Execute plugin code
+      pluginFunction(exports, require, module);
+      
+      // Get the plugin definition
+      const plugin = module.exports.default || module.exports;
+      
+      if (!plugin || typeof plugin !== 'object') {
+        throw new Error('Plugin must export a plugin definition object');
+      }
+      
+      // Validate plugin structure
+      if (!plugin.id || !plugin.name || !plugin.version) {
+        throw new Error('Plugin must have id, name, and version properties');
+      }
+      
+      await this.registerPlugin(plugin);
+    } catch (error) {
+      console.error(`❌ Failed to load plugin from ${source}:`, error);
+      throw error;
+    }
+  }
+
+  async unloadPlugin(pluginId: string): Promise<void> {
+    await this.unregisterPlugin(pluginId);
+  }
+
+  getUIExtensions(extensionPoint: UIExtensionPoint): UIExtension[] {
+    return this.uiExtensions.get(extensionPoint) || [];
+  }
+
+  registerUIExtension(extension: UIExtension): void {
+    const extensions = this.uiExtensions.get(extension.extensionPoint) || [];
+    extensions.push(extension);
+    extensions.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    this.uiExtensions.set(extension.extensionPoint, extensions);
+    this.emit('ui-extension:registered', extension);
+  }
+
+  unregisterUIExtension(extensionId: string): void {
+    for (const [extensionPoint, extensions] of this.uiExtensions.entries()) {
+      const index = extensions.findIndex(ext => ext.id === extensionId);
+      if (index !== -1) {
+        const removed = extensions.splice(index, 1)[0];
+        this.uiExtensions.set(extensionPoint, extensions);
+        this.emit('ui-extension:unregistered', removed);
+        break;
+      }
+    }
   }
 
   getStats(): {

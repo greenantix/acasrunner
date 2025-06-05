@@ -1,139 +1,271 @@
-import { PluginAPI, ActivityEvent, UIExtensionPoint } from '@/types/plugin';
-import { ActivityService } from '@/services/activity-service';
+import { 
+  PluginAPI, 
+  ActivityEvent, 
+  UIExtensionPoint, 
+  ActivityService as IActivityService,
+  EscalationService,
+  ChatService,
+  FileService,
+  Logger,
+  ConfigService,
+  StorageService,
+  UIService
+} from '@/types/plugin';
+import { activityService } from '@/services/activity-service';
 import { EscalationManager } from '@/services/escalation-manager';
 
-export class PluginAPIImpl implements PluginAPI {
-  private activityService?: ActivityService;
+export class PluginAPIImpl {
+  private pluginRegistry: any;
+  private pluginAPIs: Map<string, PluginAPI> = new Map();
+  private activityService?: typeof activityService;
   private escalationManager?: EscalationManager;
   private uiExtensions: Map<UIExtensionPoint, Array<{ pluginId: string; component: any }>> = new Map();
 
   constructor(pluginRegistry: any) {
-    // Services will be set later via setters
+    this.pluginRegistry = pluginRegistry;
   }
 
-  setActivityService(activityService: ActivityService): void {
+  createPluginAPI(pluginId: string): PluginAPI {
+    const api: PluginAPI = {
+      activity: this.createActivityService(),
+      escalation: this.createEscalationService(),
+      chat: this.createChatService(),
+      files: this.createFileService(),
+      log: this.createLogger(pluginId),
+      config: this.createConfigService(pluginId),
+      storage: this.createStorageService(pluginId),
+      ui: this.createUIService(pluginId),
+      emit: (event: string, data: any) => this.pluginRegistry.emit(event, data),
+      on: (event: string, handler: Function) => this.pluginRegistry.on(event, handler),
+      off: (event: string, handler: Function) => this.pluginRegistry.off(event, handler)
+    };
+    
+    this.pluginAPIs.set(pluginId, api);
+    return api;
+  }
+
+  private createActivityService(): IActivityService {
+    return {
+      emit: (event: ActivityEvent) => {
+        if (this.activityService) {
+          this.activityService.emit('activity', event);
+        }
+      },
+      getRecentActivities: (limit = 50) => {
+        return this.activityService?.getRecentActivities(limit) || [];
+      },
+      subscribe: (handler: (event: ActivityEvent) => void) => {
+        if (this.activityService) {
+          this.activityService.on('activity', handler);
+          return () => this.activityService?.off('activity', handler);
+        }
+        return () => {};
+      }
+    };
+  }
+
+  private createEscalationService(): EscalationService {
+    return {
+      trigger: async (escalation: any) => {
+        if (this.escalationManager) {
+          await this.escalationManager.escalateIssue(escalation.message, escalation.severity, escalation.context);
+        }
+      },
+      getHistory: (limit = 50) => {
+        return this.escalationManager?.getHistory(limit) || [];
+      },
+      subscribe: (handler: (escalation: any) => void) => {
+        if (this.escalationManager) {
+          this.escalationManager.on('escalation', handler);
+          return () => this.escalationManager?.off('escalation', handler);
+        }
+        return () => {};
+      }
+    };
+  }
+
+  private createChatService(): ChatService {
+    return {
+      sendMessage: (message: string, sender = 'plugin') => {
+        console.log(`[Chat] ${sender}: ${message}`);
+      },
+      getHistory: (limit = 50) => {
+        return [];
+      },
+      subscribe: (handler: (message: any) => void) => {
+        return () => {};
+      }
+    };
+  }
+
+  private createFileService(): FileService {
+    return {
+      read: async (filePath: string) => {
+        if (typeof window !== 'undefined' && (window as any).fs) {
+          try {
+            return await (window as any).fs.readFile(filePath, { encoding: 'utf8' });
+          } catch (error) {
+            throw new Error(`Failed to read file ${filePath}: ${error}`);
+          }
+        }
+        throw new Error('File system not available');
+      },
+      write: async (filePath: string, content: string) => {
+        if (typeof window !== 'undefined' && (window as any).fs) {
+          try {
+            await (window as any).fs.writeFile(filePath, content);
+          } catch (error) {
+            throw new Error(`Failed to write file ${filePath}: ${error}`);
+          }
+        } else {
+          throw new Error('File system not available');
+        }
+      },
+      exists: async (filePath: string) => {
+        try {
+          await this.createFileService().read(filePath);
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      list: async (directoryPath: string) => {
+        return [];
+      },
+      watch: (filePath: string, handler: (event: any) => void) => {
+        return () => {};
+      }
+    };
+  }
+
+  private createLogger(pluginId: string): Logger {
+    return {
+      info: (message: string, data?: any) => {
+        console.log(`[Plugin:${pluginId}] INFO:`, message, data);
+      },
+      warn: (message: string, data?: any) => {
+        console.warn(`[Plugin:${pluginId}] WARN:`, message, data);
+      },
+      error: (message: string, data?: any) => {
+        console.error(`[Plugin:${pluginId}] ERROR:`, message, data);
+      },
+      debug: (message: string, data?: any) => {
+        console.debug(`[Plugin:${pluginId}] DEBUG:`, message, data);
+      }
+    };
+  }
+
+  private createConfigService(pluginId: string): ConfigService {
+    return {
+      get: (key: string, defaultValue?: any) => {
+        const storageKey = `plugin_${pluginId}_config_${key}`;
+        if (typeof window !== 'undefined') {
+          const value = localStorage.getItem(storageKey);
+          return value ? JSON.parse(value) : defaultValue;
+        }
+        return defaultValue;
+      },
+      set: (key: string, value: any) => {
+        const storageKey = `plugin_${pluginId}_config_${key}`;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, JSON.stringify(value));
+        }
+      },
+      getAll: () => {
+        if (typeof window !== 'undefined') {
+          const config: any = {};
+          const prefix = `plugin_${pluginId}_config_`;
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith(prefix)) {
+              const configKey = key.substring(prefix.length);
+              const value = localStorage.getItem(key);
+              if (value) {
+                config[configKey] = JSON.parse(value);
+              }
+            }
+          }
+          return config;
+        }
+        return {};
+      },
+      reset: () => {
+        if (typeof window !== 'undefined') {
+          const prefix = `plugin_${pluginId}_config_`;
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith(prefix)) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(key => localStorage.removeItem(key));
+        }
+      }
+    };
+  }
+
+  private createStorageService(pluginId: string): StorageService {
+    return {
+      get: async (key: string) => {
+        const storageKey = `plugin_${pluginId}_storage_${key}`;
+        if (typeof window !== 'undefined') {
+          const value = localStorage.getItem(storageKey);
+          return value ? JSON.parse(value) : null;
+        }
+        return null;
+      },
+      set: async (key: string, value: any) => {
+        const storageKey = `plugin_${pluginId}_storage_${key}`;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, JSON.stringify(value));
+        }
+      },
+      delete: async (key: string) => {
+        const storageKey = `plugin_${pluginId}_storage_${key}`;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(storageKey);
+        }
+      },
+      clear: async () => {
+        if (typeof window !== 'undefined') {
+          const prefix = `plugin_${pluginId}_storage_`;
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith(prefix)) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(key => localStorage.removeItem(key));
+        }
+      }
+    };
+  }
+
+  private createUIService(pluginId: string): UIService {
+    return {
+      showNotification: (message: string, type = 'info') => {
+        console.log(`[Plugin:${pluginId}] Notification [${type}]:`, message);
+      },
+      showDialog: async (options: any) => {
+        console.log(`[Plugin:${pluginId}] Dialog:`, options);
+        return null;
+      },
+      registerMenuItem: (item: any) => {
+        console.log(`[Plugin:${pluginId}] Registering menu item:`, item);
+      },
+      registerCommand: (command: any) => {
+        console.log(`[Plugin:${pluginId}] Registering command:`, command);
+      }
+    };
+  }
+
+  setActivityService(activityService: typeof import('@/services/activity-service').activityService): void {
     this.activityService = activityService;
   }
 
   setEscalationManager(escalationManager: EscalationManager): void {
     this.escalationManager = escalationManager;
-  }
-
-  // Activity System Integration
-  async subscribeToActivities(callback: (event: ActivityEvent) => void): Promise<void> {
-    if (!this.activityService) {
-      throw new Error('Activity service not available');
-    }
-    // Subscribe to activity events from the activity service
-    this.activityService.on('activity', callback);
-  }
-
-  async unsubscribeFromActivities(callback: (event: ActivityEvent) => void): Promise<void> {
-    if (!this.activityService) {
-      throw new Error('Activity service not available');
-    }
-    this.activityService.off('activity', callback);
-  }
-
-  async logActivity(activity: ActivityEvent): Promise<void> {
-    if (!this.activityService) {
-      throw new Error('Activity service not available');
-    }
-    await this.activityService.logActivity(activity);
-  }
-
-  // AI Integration
-  async requestAIAssistance(prompt: string, context?: any): Promise<string> {
-    if (!this.escalationManager) {
-      throw new Error('Escalation manager not available');
-    }
-    return await this.escalationManager.requestAssistance(prompt, context);
-  }
-
-  async escalateIssue(issue: string, severity: 'low' | 'medium' | 'high', context?: any): Promise<void> {
-    if (!this.escalationManager) {
-      throw new Error('Escalation manager not available');
-    }
-    await this.escalationManager.escalateIssue(issue, severity, context);
-  }
-
-  // UI Extension System
-  async registerUIExtension(
-    extensionPoint: UIExtensionPoint,
-    component: any,
-    pluginId: string
-  ): Promise<void> {
-    if (!this.uiExtensions.has(extensionPoint)) {
-      this.uiExtensions.set(extensionPoint, []);
-    }
-    this.uiExtensions.get(extensionPoint)!.push({ pluginId, component });
-  }
-
-  async unregisterUIExtension(
-    extensionPoint: UIExtensionPoint,
-    pluginId: string
-  ): Promise<void> {
-    const extensions = this.uiExtensions.get(extensionPoint);
-    if (extensions) {
-      const filtered = extensions.filter(ext => ext.pluginId !== pluginId);
-      this.uiExtensions.set(extensionPoint, filtered);
-    }
-  }
-
-  getUIExtensions(extensionPoint: UIExtensionPoint): Array<{ pluginId: string; component: any }> {
-    return this.uiExtensions.get(extensionPoint) || [];
-  }
-
-  // Storage System
-  async setData(key: string, value: any, pluginId: string): Promise<void> {
-    const storageKey = `plugin_${pluginId}_${key}`;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(storageKey, JSON.stringify(value));
-    }
-  }
-
-  async getData(key: string, pluginId: string): Promise<any> {
-    const storageKey = `plugin_${pluginId}_${key}`;
-    if (typeof window !== 'undefined') {
-      const data = localStorage.getItem(storageKey);
-      return data ? JSON.parse(data) : null;
-    }
-    return null;
-  }
-
-  async removeData(key: string, pluginId: string): Promise<void> {
-    const storageKey = `plugin_${pluginId}_${key}`;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(storageKey);
-    }
-  }
-
-  // Configuration System
-  async getConfig(key: string, defaultValue?: any): Promise<any> {
-    // This would integrate with your app's configuration system
-    return defaultValue;
-  }
-
-  async setConfig(key: string, value: any): Promise<void> {
-    // This would integrate with your app's configuration system
-    console.log(`Setting config ${key}:`, value);
-  }
-
-  // Utility Functions
-  showNotification(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info'): void {
-    // This would integrate with your app's notification system
-    console.log(`[${type.toUpperCase()}] ${message}`);
-  }
-
-  openModal(component: any, props?: any): void {
-    // This would integrate with your app's modal system
-    console.log('Opening modal:', component, props);
-  }
-
-  navigateTo(path: string): void {
-    // This would integrate with your app's router
-    if (typeof window !== 'undefined') {
-      window.location.href = path;
-    }
   }
 }

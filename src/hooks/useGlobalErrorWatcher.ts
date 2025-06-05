@@ -1,10 +1,9 @@
 // src/hooks/useGlobalErrorWatcher.ts
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, createElement } from 'react';
 import { toast } from '@/hooks/use-toast';
 import ErrorDisplayToast from '@/components/error-display-toast';
-import type React from 'react';
 
 export function useGlobalErrorWatcher() {
   useEffect(() => {
@@ -20,7 +19,7 @@ export function useGlobalErrorWatcher() {
       
       toast({
         title: "Unhandled Error Detected",
-        description: React.createElement(ErrorDisplayToast, { 
+        description: createElement(ErrorDisplayToast, { 
           error: errorInstance, 
           errorInfo: { componentStack: `Global error at ${source}:${lineno}:${colno}` },
           source: 'window.onerror'
@@ -37,7 +36,7 @@ export function useGlobalErrorWatcher() {
       
       toast({
         title: "Unhandled Promise Rejection",
-        description: React.createElement(ErrorDisplayToast, { 
+        description: createElement(ErrorDisplayToast, { 
           error: errorInstance,
           errorInfo: { componentStack: `Promise rejection. Reason: ${String(event.reason)}` },
           source: 'unhandledrejection'

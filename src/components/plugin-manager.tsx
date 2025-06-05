@@ -27,9 +27,13 @@ const PluginCard: React.FC<{ plugin: PluginInstance }> = ({ plugin }) => {
 
   const getStatusColor = (status: PluginStatus) => {
     switch (status) {
+      case 'enabled':
       case 'active': return 'bg-green-500';
+      case 'loaded':
       case 'loading': return 'bg-yellow-500';
       case 'error': return 'bg-red-500';
+      case 'disabled':
+      case 'unloaded':
       case 'stopped': return 'bg-gray-500';
       default: return 'bg-gray-500';
     }

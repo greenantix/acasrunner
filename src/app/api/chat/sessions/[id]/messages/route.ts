@@ -3,14 +3,15 @@ import { chatService } from '@/services/chat-service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const limit = searchParams.get('limit');
     const limitNumber = limit ? parseInt(limit) : undefined;
 
-    const messages = await chatService.getMessages(params.id, limitNumber);
+    const messages = await chatService.getMessages(id, limitNumber);
     
     return NextResponse.json({ 
       success: true, 
@@ -30,9 +31,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { content, role = 'user', attachments } = body;
 
@@ -47,7 +49,7 @@ export async function POST(
     }
 
     const message = await chatService.sendMessage(
-      params.id,
+      id,
       content.trim(),
       role,
       attachments

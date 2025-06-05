@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { escalationManager } from '@/services/escalation-manager';
 import { activityEscalationBridge } from '@/services/activity-escalation-bridge';
+import { escalationManager } from '@/services/escalation-manager';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,12 +10,12 @@ export async function GET(request: NextRequest) {
     const severity = url.searchParams.get('severity');
 
     let escalations = escalationManager.getEscalationHistory(limit);
-    
+
     // Apply filters
     if (status) {
       escalations = escalations.filter(e => e.status === status);
     }
-    
+
     if (severity) {
       escalations = escalations.filter(e => e.severity === severity);
     }
@@ -25,14 +25,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       escalations,
       stats,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('Error fetching escalations:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch escalations' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch escalations' }, { status: 500 });
   }
 }
 
@@ -46,7 +43,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: true,
           testResult,
-          message: 'Escalation test completed'
+          message: 'Escalation test completed',
         });
 
       case 'simulate_error':
@@ -57,23 +54,24 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        
+
         await activityEscalationBridge.simulateError(errorMessage, severity);
         return NextResponse.json({
           success: true,
-          message: `Simulated ${severity} error: ${errorMessage}`
+          message: `Simulated ${severity} error: ${errorMessage}`,
         });
 
       default:
-        return NextResponse.json(
-          { error: `Unknown action: ${action}` },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
     }
   } catch (error) {
     console.error('Error processing escalation request:', error);
     return NextResponse.json(
-      { error: `Failed to process request: ${error.message}` },
+      {
+        error:
+          'Failed to process request: ' +
+          (error instanceof Error ? error.message : JSON.stringify(error)),
+      },
       { status: 500 }
     );
   }

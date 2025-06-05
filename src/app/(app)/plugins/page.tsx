@@ -79,8 +79,7 @@ export default function PluginsPage() {
       if (file.name.endsWith('.zip')) {
         toast({
           title: "ZIP File Dropped (Mock)",
-          description: `${newPluginName} would be unzipped and plugins registered. This is a UI demo.`,
-          icon: <FileArchive className="mr-2 h-5 w-5 text-blue-500" />
+          description: `${newPluginName} would be unzipped and plugins registered. This is a UI demo.`
         });
         // Mock adding a plugin from the zip
         const mockPluginFromZip: Plugin = {
@@ -124,7 +123,7 @@ export default function PluginsPage() {
         const file = e.target.files[0];
         const newPluginName = file.name;
         if (file.name.endsWith('.zip')) {
-            toast({ title: "ZIP File Selected (Mock)", description: `${newPluginName} selected. Unzipping and registration would occur.`, icon: <FileArchive className="mr-2 h-5 w-5 text-blue-500" />});
+            toast({ title: "ZIP File Selected (Mock)", description: `${newPluginName} selected. Unzipping and registration would occur.` });
         } else {
             toast({ title: "File Selected (Mock)", description: `${newPluginName} selected. This is a UI demo.`});
         }

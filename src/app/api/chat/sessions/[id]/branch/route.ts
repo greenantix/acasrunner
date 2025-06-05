@@ -3,13 +3,14 @@ import { chatService } from '@/services/chat-service';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { fromMessageId } = body;
 
-    const newSession = await chatService.branchSession(params.id, fromMessageId);
+    const newSession = await chatService.branchSession(id, fromMessageId);
     
     return NextResponse.json({ 
       success: true, 

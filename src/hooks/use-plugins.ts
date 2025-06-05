@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useContext, createContext } from 'react';
+import React from 'react';
+import type { ReactNode } from 'react';
 import { Plugin, PluginInstance, PluginStatus, UIExtensionPoint } from '@/types/plugin';
 import { PluginRegistry } from '@/services/plugin-system/plugin-registry';
 
@@ -10,29 +11,34 @@ interface PluginContextType {
   getUIExtensions: (extensionPoint: UIExtensionPoint) => any[];
 }
 
-const PluginContext = createContext<PluginContextType | null>(null);
+// Create the context with explicit name
+const PluginContextInternal = React.createContext<PluginContextType | null>(null);
 
-export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [registry] = useState(() => new PluginRegistry());
-  const [plugins, setPlugins] = useState<PluginInstance[]>([]);
+export function PluginProvider({ children }: { children: ReactNode }): JSX.Element {
+  const [registry] = React.useState(() => new PluginRegistry());
+  const [plugins, setPlugins] = React.useState<PluginInstance[]>([]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handlePluginUpdate = () => {
       setPlugins([...registry.getAllPlugins()]);
     };
 
-    registry.on('pluginLoaded', handlePluginUpdate);
-    registry.on('pluginUnloaded', handlePluginUpdate);
-    registry.on('pluginStatusChanged', handlePluginUpdate);
+    registry.on('plugin:loaded', handlePluginUpdate);
+    registry.on('plugin:unloaded', handlePluginUpdate);
+    registry.on('plugin:enabled', handlePluginUpdate);
+    registry.on('plugin:disabled', handlePluginUpdate);
+    registry.on('plugin:error', handlePluginUpdate);
 
     return () => {
-      registry.off('pluginLoaded', handlePluginUpdate);
-      registry.off('pluginUnloaded', handlePluginUpdate);
-      registry.off('pluginStatusChanged', handlePluginUpdate);
+      registry.off('plugin:loaded', handlePluginUpdate);
+      registry.off('plugin:unloaded', handlePluginUpdate);
+      registry.off('plugin:enabled', handlePluginUpdate);
+      registry.off('plugin:disabled', handlePluginUpdate);
+      registry.off('plugin:error', handlePluginUpdate);
     };
   }, [registry]);
 
-  const loadPlugin = useCallback(async (source: string | File) => {
+  const loadPlugin = React.useCallback(async (source: string | File) => {
     if (typeof source === 'string') {
       await registry.loadFromURL(source);
     } else {
@@ -40,57 +46,59 @@ export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [registry]);
 
-  const unloadPlugin = useCallback(async (pluginId: string) => {
+  const unloadPlugin = React.useCallback(async (pluginId: string) => {
     await registry.unloadPlugin(pluginId);
   }, [registry]);
 
-  const getUIExtensions = useCallback((extensionPoint: UIExtensionPoint) => {
+  const getUIExtensions = React.useCallback((extensionPoint: UIExtensionPoint) => {
     return registry.getUIExtensions(extensionPoint);
   }, [registry]);
 
-  return (
-    <PluginContext.Provider value={{
-      registry,
-      plugins,
-      loadPlugin,
-      unloadPlugin,
-      getUIExtensions
-    }}>
-      {children}
-    </PluginContext.Provider>
-  );
-};
+  const contextValue: PluginContextType = {
+    registry,
+    plugins,
+    loadPlugin,
+    unloadPlugin,
+    getUIExtensions
+  };
 
-export const usePlugins = () => {
-  const context = useContext(PluginContext);
+  return React.createElement(
+    PluginContextInternal.Provider,
+    { value: contextValue },
+    children
+  );
+}
+
+export function usePlugins(): PluginContextType {
+  const context = React.useContext(PluginContextInternal);
   if (!context) {
     throw new Error('usePlugins must be used within a PluginProvider');
   }
   return context;
-};
+}
 
-export const usePlugin = (pluginId: string) => {
+export function usePlugin(pluginId: string): PluginInstance | undefined {
   const { plugins } = usePlugins();
   return plugins.find(p => p.plugin.id === pluginId);
-};
+}
 
-export const usePluginStatus = (pluginId: string): PluginStatus => {
+export function usePluginStatus(pluginId: string): PluginStatus {
   const plugin = usePlugin(pluginId);
   return plugin?.status || 'stopped';
-};
+}
 
-export const useUIExtensions = (extensionPoint: UIExtensionPoint) => {
+export function useUIExtensions(extensionPoint: UIExtensionPoint): any[] {
   const { getUIExtensions } = usePlugins();
-  const [extensions, setExtensions] = useState<any[]>([]);
+  const [extensions, setExtensions] = React.useState<any[]>([]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     setExtensions(getUIExtensions(extensionPoint));
   }, [extensionPoint, getUIExtensions]);
 
   return extensions;
-};
+}
 
-export const usePluginAPI = () => {
+export function usePluginAPI() {
   const { registry } = usePlugins();
   return registry?.getPluginAPI();
-};
+}

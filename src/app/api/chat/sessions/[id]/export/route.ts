@@ -4,9 +4,10 @@ import { ExportFormat } from '@/types/chat';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { format, options = {} } = body;
 
@@ -26,27 +27,27 @@ export async function POST(
 
     switch (format as ExportFormat) {
       case 'markdown':
-        result = await exportService.exportToMarkdown(params.id, options);
+        result = await exportService.exportToMarkdown(id, options);
         mimeType = 'text/markdown';
-        filename = `chat-${params.id}.md`;
+        filename = `chat-${id}.md`;
         break;
         
       case 'json':
-        result = await exportService.exportToJSON(params.id, options.includeMetadata);
+        result = await exportService.exportToJSON(id, options.includeMetadata);
         mimeType = 'application/json';
-        filename = `chat-${params.id}.json`;
+        filename = `chat-${id}.json`;
         break;
         
       case 'html':
-        result = await exportService.exportToHTML(params.id, options);
+        result = await exportService.exportToHTML(id, options);
         mimeType = 'text/html';
-        filename = `chat-${params.id}.html`;
+        filename = `chat-${id}.html`;
         break;
         
       case 'plaintext':
-        result = await exportService.exportToPlaintext(params.id);
+        result = await exportService.exportToPlaintext(id);
         mimeType = 'text/plain';
-        filename = `chat-${params.id}.txt`;
+        filename = `chat-${id}.txt`;
         break;
         
       default:

@@ -90,7 +90,18 @@ export interface PluginInstance {
   error?: string;
 }
 
-export type PluginStatus = 'loaded' | 'enabled' | 'disabled' | 'error' | 'unloaded';
+export type PluginStatus = 'loaded' | 'enabled' | 'disabled' | 'error' | 'unloaded' | 'active' | 'loading' | 'stopped';
+
+export type UIExtensionPoint = 'toolbar' | 'sidebar' | 'statusbar' | 'contextmenu' | 'commandpalette' | 'settings';
+
+export interface UIExtension {
+  id: string;
+  pluginId: string;
+  extensionPoint: UIExtensionPoint;
+  component: React.ComponentType<any>;
+  priority?: number;
+  metadata?: any;
+}
 
 export interface ValidationResult {
   valid: boolean;

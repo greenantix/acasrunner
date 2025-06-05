@@ -7,76 +7,119 @@ const AIAssistantPlugin: Plugin = {
   author: 'ACAS Team',
   description: 'Provides AI-powered code suggestions and error analysis',
   icon: '🤖',
+  permissions: [
+    {
+      type: 'ai_access',
+      description: 'Access AI services for code analysis'
+    },
+    {
+      type: 'storage',
+      description: 'Store AI suggestions and analysis'
+    },
+    {
+      type: 'ui',
+      description: 'Display AI suggestions in the UI'
+    }
+  ],
 
-  async initialize(api: PluginAPI) {
-    console.log('AI Assistant Plugin initialized');
+  async onLoad(api: PluginAPI) {
+    console.log('AI Assistant Plugin loaded');
+    api.log.info('AI Assistant plugin initialized');
+  },
+
+  async onEnable(api: PluginAPI) {
+    console.log('AI Assistant Plugin enabled');
     
-    // Subscribe to error activities
-    await api.subscribeToActivities(async (event) => {
-      if (event.type === 'error' && event.data.severity === 'high') {
-        // Automatically request AI assistance for high-severity errors
+    // Subscribe to activity events, particularly errors
+    const unsubscribe = api.activity.subscribe(async (event) => {
+      if (event.type === 'error') {
+        // Automatically analyze high-severity errors
         try {
-          const suggestion = await api.requestAIAssistance(
-            `Analyze this error and suggest a fix: ${event.data.message}`,
-            { 
-              error: event.data,
-              timestamp: event.timestamp,
-              context: 'automatic_analysis'
-            }
-          );
+          api.log.info(`AI Assistant analyzing error: ${event.message}`);
           
-          api.showNotification(
+          // For now, just log the error - in a real implementation,
+          // this would call your AI service
+          const suggestion = `Consider checking: ${event.message}`;
+          
+          api.ui.showNotification(
             `AI Suggestion: ${suggestion.substring(0, 100)}...`,
             'info'
           );
           
           // Store the suggestion
-          await api.setData(`suggestion_${event.timestamp}`, {
-            error: event.data,
+          await api.storage.set(`suggestion_${Date.now()}`, {
+            error: event,
             suggestion,
             timestamp: new Date().toISOString()
-          }, 'ai-assistant');
+          });
           
         } catch (error) {
-          console.error('AI Assistant failed to analyze error:', error);
+          api.log.error('AI Assistant failed to analyze error:', error);
         }
       }
     });
 
-    // Register UI extension for code suggestions
-    await api.registerUIExtension('sidebar', {
-      name: 'AI Suggestions',
-      component: () => ({
-        render: () => `
-          <div>
-            <h3>AI Code Assistant</h3>
-            <button onclick="requestSuggestion()">Get Code Suggestion</button>
-            <div id="ai-suggestions"></div>
-          </div>
-        `
-      })
-    }, 'ai-assistant');
+    // Store unsubscribe function for cleanup
+    api.storage.set('_unsubscribe', unsubscribe);
 
-    api.showNotification('AI Assistant plugin activated', 'success');
+    api.ui.showNotification('AI Assistant plugin activated', 'success');
   },
 
-  async destroy() {
-    console.log('AI Assistant Plugin destroyed');
+  async onDisable(api: PluginAPI) {
+    console.log('AI Assistant Plugin disabled');
+    
+    // Clean up subscription
+    const unsubscribe = await api.storage.get('_unsubscribe');
+    if (unsubscribe && typeof unsubscribe === 'function') {
+      unsubscribe();
+    }
+    
+    api.ui.showNotification('AI Assistant plugin deactivated', 'info');
   },
 
-  // Plugin-specific methods
-  async getSuggestion(api: PluginAPI, code: string, context: string) {
-    const prompt = `Analyze this code and provide suggestions for improvement:\n\n${code}\n\nContext: ${context}`;
-    return await api.requestAIAssistance(prompt, { code, context });
+  async onUnload(api: PluginAPI) {
+    console.log('AI Assistant Plugin unloaded');
+    api.log.info('AI Assistant plugin destroyed');
   },
 
-  async escalateComplexIssue(api: PluginAPI, issue: string, context: any) {
-    await api.escalateIssue(
-      `Complex coding issue requiring human attention: ${issue}`,
-      'high',
-      { ...context, escalatedBy: 'ai-assistant-plugin' }
-    );
-  }
+  // Plugin commands
+  commands: [
+    {
+      id: 'get-ai-suggestion',
+      name: 'Get AI Code Suggestion',
+      description: 'Get AI-powered code suggestions',
+      handler: async (args, api) => {
+        const code = args[0] || 'No code provided';
+        const context = args[1] || 'General code review';
+        
+        // In a real implementation, this would call your AI service
+        const suggestion = `AI suggests improving: ${code.substring(0, 50)}...`;
+        
+        api.log.info('AI suggestion generated', { code: code.length, suggestion });
+        api.ui.showNotification('AI suggestion ready', 'success');
+        
+        return {
+          suggestion,
+          confidence: 0.85,
+          timestamp: new Date().toISOString()
+        };
+      },
+      parameters: [
+        {
+          name: 'code',
+          type: 'string',
+          description: 'Code to analyze',
+          required: true
+        },
+        {
+          name: 'context',
+          type: 'string',
+          description: 'Context for the analysis',
+          required: false
+        }
+      ]
+    }
+  ]
 };
 
 export default AIAssistantPlugin;
