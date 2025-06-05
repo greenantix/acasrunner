@@ -1,14 +1,20 @@
-import { Plugin, PluginInstance, PluginStatus, PluginAPI, UIExtensionPoint, UIExtension } from '@/types/plugin';
-import { PluginAPIImpl } from './plugin-api';
-import { EventEmitter } from 'events';
-import { ActivityService } from '@/services/activity-service';
 import { EscalationManager } from '@/services/escalation-manager';
+import {
+  Plugin,
+  PluginAPI,
+  PluginInstance,
+  PluginStatus,
+  UIExtension,
+  UIExtensionPoint,
+} from '@/types/plugin';
+import { EventEmitter } from 'events';
+import { PluginAPIImpl } from './plugin-api';
 
 export class PluginRegistry extends EventEmitter {
   private plugins: Map<string, PluginInstance> = new Map();
   private uiExtensions: Map<UIExtensionPoint, UIExtension[]> = new Map();
   private pluginAPI: PluginAPIImpl;
-  private activityService?: ActivityService;
+  private activityService?: any;
   private escalationManager?: EscalationManager;
 
   constructor() {
@@ -16,7 +22,7 @@ export class PluginRegistry extends EventEmitter {
     this.pluginAPI = new PluginAPIImpl(this);
   }
 
-  setActivityService(activityService: ActivityService): void {
+  setActivityService(activityService: any): void {
     this.activityService = activityService;
     this.pluginAPI.setActivityService(activityService);
   }
@@ -33,7 +39,7 @@ export class PluginRegistry extends EventEmitter {
 
   async registerPlugin(plugin: Plugin): Promise<PluginInstance> {
     console.log(`📦 Registering plugin: ${plugin.name} (${plugin.id})`);
-    
+
     if (this.plugins.has(plugin.id)) {
       throw new Error(`Plugin with ID '${plugin.id}' is already registered`);
     }
@@ -45,7 +51,7 @@ export class PluginRegistry extends EventEmitter {
       config: { ...plugin.defaultConfig },
       api: this.pluginAPI.createPluginAPI(plugin.id),
       loadedAt: new Date(),
-      error: undefined
+      error: undefined,
     };
 
     this.plugins.set(plugin.id, instance);
@@ -55,14 +61,14 @@ export class PluginRegistry extends EventEmitter {
       if (plugin.onLoad) {
         await plugin.onLoad(instance.api);
       }
-      
+
       console.log(`✅ Plugin loaded: ${plugin.name}`);
       this.emit('plugin:loaded', instance);
-      
+
       return instance;
     } catch (error) {
       instance.status = 'error';
-      instance.error = error.message;
+      instance.error = error instanceof Error ? error.message : String(error);
       console.error(`❌ Failed to load plugin ${plugin.name}:`, error);
       this.emit('plugin:error', instance, error);
       throw error;
@@ -91,12 +97,12 @@ export class PluginRegistry extends EventEmitter {
       // Remove from registry
       this.plugins.delete(pluginId);
       instance.status = 'unloaded';
-      
+
       console.log(`✅ Plugin unregistered: ${instance.plugin.name}`);
       this.emit('plugin:unloaded', instance);
     } catch (error) {
       instance.status = 'error';
-      instance.error = error.message;
+      instance.error = error instanceof Error ? error.message : String(error);
       console.error(`❌ Failed to unregister plugin ${instance.plugin.name}:`, error);
       this.emit('plugin:error', instance, error);
       throw error;
@@ -129,12 +135,12 @@ export class PluginRegistry extends EventEmitter {
       instance.status = 'enabled';
       instance.enabledAt = new Date();
       instance.error = undefined;
-      
+
       console.log(`✅ Plugin enabled: ${instance.plugin.name}`);
       this.emit('plugin:enabled', instance);
     } catch (error) {
       instance.status = 'error';
-      instance.error = error.message;
+      instance.error = error instanceof Error ? error.message : String(error);
       console.error(`❌ Failed to enable plugin ${instance.plugin.name}:`, error);
       this.emit('plugin:error', instance, error);
       throw error;
@@ -163,12 +169,12 @@ export class PluginRegistry extends EventEmitter {
       instance.status = 'disabled';
       instance.enabledAt = undefined;
       instance.error = undefined;
-      
+
       console.log(`✅ Plugin disabled: ${instance.plugin.name}`);
       this.emit('plugin:disabled', instance);
     } catch (error) {
       instance.status = 'error';
-      instance.error = error.message;
+      instance.error = error instanceof Error ? error.message : String(error);
       console.error(`❌ Failed to disable plugin ${instance.plugin.name}:`, error);
       this.emit('plugin:error', instance, error);
       throw error;
@@ -208,15 +214,18 @@ export class PluginRegistry extends EventEmitter {
 
   async broadcastActivityEvent(event: any): Promise<void> {
     const enabledPlugins = this.getEnabledPlugins();
-    
+
     await Promise.allSettled(
-      enabledPlugins.map(async (instance) => {
+      enabledPlugins.map(async instance => {
         try {
           if (instance.plugin.onActivity) {
             await instance.plugin.onActivity(event);
           }
         } catch (error) {
-          console.error(`❌ Plugin ${instance.plugin.name} failed to handle activity event:`, error);
+          console.error(
+            `❌ Plugin ${instance.plugin.name} failed to handle activity event:`,
+            error
+          );
           this.emit('plugin:error', instance, error);
         }
       })
@@ -225,15 +234,18 @@ export class PluginRegistry extends EventEmitter {
 
   async broadcastFileChangeEvent(event: any): Promise<void> {
     const enabledPlugins = this.getEnabledPlugins();
-    
+
     await Promise.allSettled(
-      enabledPlugins.map(async (instance) => {
+      enabledPlugins.map(async instance => {
         try {
           if (instance.plugin.onFileChange) {
             await instance.plugin.onFileChange(event);
           }
         } catch (error) {
-          console.error(`❌ Plugin ${instance.plugin.name} failed to handle file change event:`, error);
+          console.error(
+            `❌ Plugin ${instance.plugin.name} failed to handle file change event:`,
+            error
+          );
           this.emit('plugin:error', instance, error);
         }
       })
@@ -242,9 +254,9 @@ export class PluginRegistry extends EventEmitter {
 
   async broadcastErrorEvent(event: any): Promise<void> {
     const enabledPlugins = this.getEnabledPlugins();
-    
+
     await Promise.allSettled(
-      enabledPlugins.map(async (instance) => {
+      enabledPlugins.map(async instance => {
         try {
           if (instance.plugin.onError) {
             await instance.plugin.onError(event);
@@ -259,13 +271,13 @@ export class PluginRegistry extends EventEmitter {
 
   async loadFromURL(url: string): Promise<void> {
     console.log(`📥 Loading plugin from URL: ${url}`);
-    
+
     try {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Failed to fetch plugin: ${response.statusText}`);
       }
-      
+
       const code = await response.text();
       await this.loadFromCode(code, url);
     } catch (error) {
@@ -276,7 +288,7 @@ export class PluginRegistry extends EventEmitter {
 
   async loadFromFile(file: File): Promise<void> {
     console.log(`📁 Loading plugin from file: ${file.name}`);
-    
+
     try {
       const code = await file.text();
       await this.loadFromCode(code, file.name);
@@ -292,7 +304,7 @@ export class PluginRegistry extends EventEmitter {
       const pluginFunction = new Function('exports', 'require', 'module', code);
       const exports = {};
       const module = { exports };
-      
+
       // Mock require function for basic dependencies
       const require = (moduleName: string) => {
         switch (moduleName) {
@@ -302,22 +314,22 @@ export class PluginRegistry extends EventEmitter {
             throw new Error(`Module '${moduleName}' is not available in plugin sandbox`);
         }
       };
-      
+
       // Execute plugin code
       pluginFunction(exports, require, module);
-      
+
       // Get the plugin definition
-      const plugin = module.exports.default || module.exports;
-      
+      const plugin = (module.exports as any).default || module.exports;
+
       if (!plugin || typeof plugin !== 'object') {
         throw new Error('Plugin must export a plugin definition object');
       }
-      
+
       // Validate plugin structure
       if (!plugin.id || !plugin.name || !plugin.version) {
         throw new Error('Plugin must have id, name, and version properties');
       }
-      
+
       await this.registerPlugin(plugin);
     } catch (error) {
       console.error(`❌ Failed to load plugin from ${source}:`, error);
@@ -376,7 +388,7 @@ export class PluginRegistry extends EventEmitter {
       enabled: enabled.length,
       disabled: disabled.length,
       errors: errors.length,
-      byAuthor
+      byAuthor,
     };
   }
 }

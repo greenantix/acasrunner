@@ -9,22 +9,24 @@ export interface Plugin {
   description: string;
   icon?: string;
   permissions: PluginPermission[];
-  
+
   // Lifecycle hooks
+  initialize?(api?: PluginAPI): Promise<void>;
+  destroy?(): Promise<void>;
   onLoad?(api: PluginAPI): Promise<void>;
   onEnable?(api: PluginAPI): Promise<void>;
   onDisable?(api: PluginAPI): Promise<void>;
   onUnload?(api: PluginAPI): Promise<void>;
-  
+
   // Event handlers
   onActivity?(event: ActivityEvent): Promise<void>;
   onError?(error: ErrorEvent): Promise<void>;
   onFileChange?(change: FileChangeEvent): Promise<void>;
-  
+
   // Commands/Actions
   commands?: PluginCommand[];
   menuItems?: PluginMenuItem[];
-  
+
   // Configuration schema
   configSchema?: any; // JSON Schema
   defaultConfig?: any;
@@ -36,13 +38,13 @@ export interface PluginAPI {
   escalation: EscalationService;
   chat: ChatService;
   files: FileService;
-  
+
   // Plugin utilities
   log: Logger;
   config: ConfigService;
   storage: StorageService;
   ui: UIService;
-  
+
   // Event system
   emit(event: string, data: any): void;
   on(event: string, handler: Function): void;
@@ -83,16 +85,32 @@ export interface PluginPermission {
 export interface PluginInstance {
   plugin: Plugin;
   status: PluginStatus;
+  initialized?: boolean;
   config: any;
   api: PluginAPI;
   loadedAt: Date;
   enabledAt?: Date;
   error?: string;
+  instance?: Plugin;
 }
 
-export type PluginStatus = 'loaded' | 'enabled' | 'disabled' | 'error' | 'unloaded' | 'active' | 'loading' | 'stopped';
+export type PluginStatus =
+  | 'loaded'
+  | 'enabled'
+  | 'disabled'
+  | 'error'
+  | 'unloaded'
+  | 'active'
+  | 'loading'
+  | 'stopped';
 
-export type UIExtensionPoint = 'toolbar' | 'sidebar' | 'statusbar' | 'contextmenu' | 'commandpalette' | 'settings';
+export type UIExtensionPoint =
+  | 'toolbar'
+  | 'sidebar'
+  | 'statusbar'
+  | 'contextmenu'
+  | 'commandpalette'
+  | 'settings';
 
 export interface UIExtension {
   id: string;

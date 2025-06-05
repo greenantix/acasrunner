@@ -1,6 +1,6 @@
-import { WorkflowStep, ExecutionContext, StepResult, ValidationResult } from '@/types/workflow';
-import { StepExecutor } from './base-executor';
+import { ExecutionContext, StepResult, ValidationResult, WorkflowStep } from '@/types/workflow';
 import { spawn } from 'child_process';
+import { StepExecutor } from './base-executor';
 
 export class ShellExecutor extends StepExecutor {
   readonly type = 'shell';
@@ -10,13 +10,13 @@ export class ShellExecutor extends StepExecutor {
   async execute(step: WorkflowStep, context: ExecutionContext): Promise<StepResult> {
     const { parameters } = step.action;
     const { command, args, cwd, env, timeout, shell } = parameters;
-    
+
     try {
       const result = await this.executeCommand(command, args, {
         cwd: cwd || process.cwd(),
         env: { ...process.env, ...env },
         timeout: timeout || 30000,
-        shell: shell !== false
+        shell: shell !== false,
       });
 
       return this.createSuccessResult({
@@ -25,7 +25,7 @@ export class ShellExecutor extends StepExecutor {
         exitCode: result.code,
         stdout: result.stdout,
         stderr: result.stderr,
-        duration: result.duration
+        duration: result.duration,
       });
     } catch (error) {
       return this.createFailureResult(
@@ -42,35 +42,35 @@ export class ShellExecutor extends StepExecutor {
     return {
       type: 'object',
       properties: {
-        command: { 
-          type: 'string', 
-          description: 'Command to execute' 
+        command: {
+          type: 'string',
+          description: 'Command to execute',
         },
-        args: { 
-          type: 'array', 
+        args: {
+          type: 'array',
           items: { type: 'string' },
-          description: 'Command arguments' 
+          description: 'Command arguments',
         },
-        cwd: { 
-          type: 'string', 
-          description: 'Working directory' 
+        cwd: {
+          type: 'string',
+          description: 'Working directory',
         },
-        env: { 
+        env: {
           type: 'object',
-          description: 'Environment variables' 
+          description: 'Environment variables',
         },
-        timeout: { 
-          type: 'number', 
+        timeout: {
+          type: 'number',
           default: 30000,
-          description: 'Timeout in milliseconds' 
+          description: 'Timeout in milliseconds',
         },
-        shell: { 
-          type: 'boolean', 
+        shell: {
+          type: 'boolean',
           default: true,
-          description: 'Use shell to execute command' 
-        }
+          description: 'Use shell to execute command',
+        },
       },
-      required: ['command']
+      required: ['command'],
     };
   }
 
@@ -90,12 +90,15 @@ export class ShellExecutor extends StepExecutor {
     duration: number;
   }> {
     const startTime = Date.now();
-    
+
     return new Promise((resolve, reject) => {
       const child = spawn(command, args, {
         cwd: options.cwd,
-        env: options.env,
-        shell: options.shell
+        env: {
+          ...process.env,
+          ...options.env,
+        },
+        shell: options.shell,
       });
 
       let stdout = '';
@@ -109,15 +112,15 @@ export class ShellExecutor extends StepExecutor {
         }, options.timeout);
       }
 
-      child.stdout?.on('data', (data) => {
+      child.stdout?.on('data', data => {
         stdout += data.toString();
       });
 
-      child.stderr?.on('data', (data) => {
+      child.stderr?.on('data', data => {
         stderr += data.toString();
       });
 
-      child.on('close', (code) => {
+      child.on('close', code => {
         if (timeoutId) {
           clearTimeout(timeoutId);
         }
@@ -127,11 +130,11 @@ export class ShellExecutor extends StepExecutor {
           stdout,
           stderr,
           code: code || 0,
-          duration
+          duration,
         });
       });
 
-      child.on('error', (error) => {
+      child.on('error', error => {
         if (timeoutId) {
           clearTimeout(timeoutId);
         }

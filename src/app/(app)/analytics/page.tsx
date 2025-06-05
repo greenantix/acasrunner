@@ -15,6 +15,8 @@ import {
   Optimization,
   BenchmarkResult
 } from '@/types/analytics';
+import { ProductivityChart, ErrorTrendsChart, AIPerformanceChart, WorkflowEfficiencyChart } from '@/components/analytics/productivity-chart';
+import { InsightsPanel } from '@/components/analytics/insights-panel';
 
 export default function AnalyticsPage() {
   const [timeframe, setTimeframe] = useState<string>('week');
@@ -299,74 +301,30 @@ export default function AnalyticsPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          {/* Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Insights */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUpIcon className="w-5 h-5" />
-                  Recent Insights
-                </CardTitle>
-                <CardDescription>AI-generated insights about your development patterns</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {insights.slice(0, 3).map((insight) => (
-                  <div key={insight.id} className="border-l-4 border-blue-500 pl-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge className={getSeverityColor(insight.severity)}>
-                        {insight.severity}
-                      </Badge>
-                      <span className="text-sm text-gray-500">
-                        {insight.timestamp.toLocaleDateString()}
-                      </span>
-                    </div>
-                    <h4 className="font-medium">{insight.title}</h4>
-                    <p className="text-sm text-gray-600">{insight.description}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Top Optimizations */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="w-5 h-5" />
-                  Optimization Opportunities
-                </CardTitle>
-                <CardDescription>Recommended improvements for your workflow</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {optimizations.slice(0, 3).map((opt) => (
-                  <div key={opt.id} className="border rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">{opt.title}</h4>
-                      <Badge variant="outline" className={getImpactColor(opt.impact)}>
-                        {opt.impact} impact
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{opt.description}</p>
-                    <p className="text-sm font-medium text-green-600">{opt.estimatedBenefit}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <ProductivityChart data={analytics.productivity} />
+            <ErrorTrendsChart data={analytics.errors} />
+            <AIPerformanceChart data={analytics.ai} />
+            <WorkflowEfficiencyChart data={analytics.workflows} />
           </div>
+
+          {/* Insights Panel */}
+          <InsightsPanel 
+            insights={insights}
+            optimizations={optimizations}
+            onInsightAction={(insightId, action) => {
+              console.log(`${action} insight:`, insightId);
+              // TODO: Implement actual insight action handling
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="productivity" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Productivity Trends</CardTitle>
-                <CardDescription>Your coding activity over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center bg-gray-50 rounded">
-                  <p className="text-gray-500">Chart component will be implemented next</p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="lg:col-span-2">
+              <ProductivityChart data={analytics.productivity} />
+            </div>
 
             <Card>
               <CardHeader>

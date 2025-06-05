@@ -1,5 +1,4 @@
 // src/ai/flows/escalate-coding-problem.ts
-'use server';
 /**
  * @fileOverview This file defines a Genkit flow for escalating coding problems to AI models.
  *

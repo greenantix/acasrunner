@@ -1,5 +1,4 @@
 
-'use server';
 /**
  * @fileOverview A Genkit flow for suggesting code fixes based on error messages and context.
  *

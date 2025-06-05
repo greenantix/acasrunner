@@ -1,0 +1,160 @@
+{
+  "name": "acas-runner-extension",
+  "displayName": "ACAS Runner - AI Coding Assistant",
+  "description": "AI-powered developer workflow automation and monitoring",
+  "version": "0.1.0",
+  "publisher": "acas-runner",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "AI",
+    "Productivity"
+  ],
+  "keywords": [
+    "ai",
+    "coding assistant",
+    "workflow",
+    "automation",
+    "monitoring"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "acas.connect",
+        "title": "Connect to ACAS Runner",
+        "category": "ACAS"
+      },
+      {
+        "command": "acas.disconnect",
+        "title": "Disconnect from ACAS Runner",
+        "category": "ACAS"
+      },
+      {
+        "command": "acas.openDashboard",
+        "title": "Open Dashboard",
+        "category": "ACAS"
+      },
+      {
+        "command": "acas.askAI",
+        "title": "Ask AI Assistant",
+        "category": "ACAS"
+      },
+      {
+        "command": "acas.analyzeCode",
+        "title": "Analyze Current Code",
+        "category": "ACAS"
+      },
+      {
+        "command": "acas.runWorkflow",
+        "title": "Run Workflow",
+        "category": "ACAS"
+      },
+      {
+        "command": "acas.showActivity",
+        "title": "Show Activity Log",
+        "category": "ACAS"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "acasActivityView",
+          "name": "ACAS Activity",
+          "when": "acas:connected"
+        },
+        {
+          "id": "acasWorkflowsView", 
+          "name": "ACAS Workflows",
+          "when": "acas:connected"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "acas",
+          "title": "ACAS Runner",
+          "icon": "$(robot)"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "ACAS Runner",
+      "properties": {
+        "acas.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "ACAS Runner server URL"
+        },
+        "acas.autoConnect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically connect to ACAS Runner on startup"
+        },
+        "acas.monitorActivity": {
+          "type": "boolean",
+          "default": true,
+          "description": "Monitor file changes and coding activity"
+        },
+        "acas.aiProvider": {
+          "type": "string",
+          "enum": ["claude", "openai", "gemini"],
+          "default": "claude",
+          "description": "Default AI provider for assistance"
+        },
+        "acas.showInlineHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show AI hints inline in the editor"
+        }
+      }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "acas.analyzeCode",
+          "when": "acas:connected",
+          "group": "acas"
+        },
+        {
+          "command": "acas.askAI",
+          "when": "acas:connected",
+          "group": "acas"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "acas.connect",
+          "when": "view == acasActivityView && !acas:connected",
+          "group": "navigation"
+        },
+        {
+          "command": "acas.disconnect",
+          "when": "view == acasActivityView && acas:connected",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "@types/ws": "^8.5.10",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "ws": "^8.16.0",
+    "axios": "^1.6.0"
+  }
+}

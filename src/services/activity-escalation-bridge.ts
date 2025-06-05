@@ -1,5 +1,4 @@
 // Server-side bridge between activity monitoring and AI escalation
-'use server';
 
 import { ActivityEvent } from './client-activity-service';
 import { escalationManager } from './escalation-manager';
@@ -59,15 +58,16 @@ class ActivityEscalationBridge {
       } catch (error) {
         console.error('Failed to process activity for escalation:', error);
         // Log the escalation failure as an activity
+        const errorMessage = error instanceof Error ? error.message : String(error);
         this.addActivity({
           id: `escalation-error-${Date.now()}`,
           timestamp: new Date(),
           type: 'error',
           source: 'escalation-bridge',
-          message: `Failed to process escalation for activity ${activity.id}: ${error.message}`,
+          message: `Failed to process escalation for activity ${activity.id}: ${errorMessage}`,
           details: {
             severity: 'medium',
-            error: error.message,
+            error: errorMessage,
             originalActivityId: activity.id
           }
         });

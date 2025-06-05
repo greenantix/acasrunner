@@ -1,5 +1,4 @@
 
-'use server';
 /**
  * @fileOverview A Genkit flow for generating documentation like READMEs or Changelogs.
  *

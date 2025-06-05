@@ -1,148 +1,94 @@
-# Claude-Step7.md - Team Collaboration Features
+# Claude-Step7.md - VS Code Extension Integration
 
 ## Current State
-ACAS Runner is currently designed as a single-user developer tool. To support team environments, we need to implement collaboration features, shared workspaces, team analytics, and real-time synchronization.
+ACAS Runner operates as a standalone web application. To provide seamless developer experience, we need to create a VS Code extension that integrates directly with the developer's IDE, providing real-time monitoring, AI assistance, and workflow automation within the editor.
 
 ## Implementation Goals
 
-### 1. Team Workspace Management
-**Location**: `src/app/(app)/teams/page.tsx`
+### 1. VS Code Extension Development
+**Location**: `vscode-extension/`
 
-Create team collaboration infrastructure:
-- **Team Creation and Management** - Create, invite, manage team members
-- **Shared Project Workspaces** - Common project monitoring across team
-- **Role-based Access Control** - Admin, developer, viewer roles
-- **Team Settings and Preferences** - Shared configurations and standards
+Create a comprehensive VS Code extension that:
+- **Real-time Activity Monitoring** - Track file changes, errors, and coding activity
+- **AI Assistant Integration** - Direct access to LLM providers within VS Code
+- **Plugin System Bridge** - Execute ACAS Runner plugins from VS Code
+- **Workflow Automation** - Trigger workflows from within the editor
 
-### 2. Real-time Collaboration
-**Location**: `src/services/collaboration/`
+### 2. Bi-directional Communication
+**Location**: `vscode-extension/src/communication/`
 
-Implement live collaboration features:
-- **Shared Activity Streams** - Team members see each other's activity
-- **Live Chat Rooms** - Team-specific chat channels
-- **Collaborative Debugging** - Shared escalation sessions
-- **Live Workflow Collaboration** - Multiple users building workflows
+Implement seamless data flow:
+- **Extension to ACAS** - Send activity data, trigger escalations
+- **ACAS to Extension** - Receive AI suggestions, workflow results
+- **Real-time Sync** - Keep extension and web app in sync
+- **Offline Support** - Queue actions when ACAS Runner is offline
 
-### 3. Knowledge Sharing System
-**Location**: `src/app/(app)/knowledge/page.tsx`
+### 3. Embedded AI Assistant
+**Location**: `vscode-extension/src/ai/`
 
-Build team knowledge base:
-- **Shared Documentation** - Team-editable docs and guides
-- **Code Pattern Library** - Reusable code snippets and patterns
-- **Escalation History** - Searchable team escalation database
-- **Best Practices Repository** - Team coding standards and practices
+Build in-editor AI features:
+- **Inline Code Suggestions** - AI-powered code completion and fixes
+- **Error Analysis** - Automatic error detection and resolution suggestions
+- **Code Review** - AI code review comments and suggestions
+- **Documentation Generation** - Auto-generate docs and comments
 
-### 4. Team Analytics and Insights
-**Location**: `src/services/analytics/team-analytics.ts`
+### 4. Workflow Integration
+**Location**: `vscode-extension/src/workflows/`
 
-Extend analytics for team context:
-- **Team Performance Dashboards** - Aggregate team metrics
-- **Member Comparison Views** - Individual vs team performance
-- **Collaboration Effectiveness** - How well team works together
-- **Knowledge Sharing Metrics** - Documentation usage and contribution
-
-## Technical Requirements
-
-### Team Data Models
-```typescript
-// src/types/team.ts
-export interface Team {
-  id: string;
-  name: string;
-  description: string;
-  avatar?: string;
-  created: Date;
-  updated: Date;
-  settings: TeamSettings;
-  subscription?: TeamSubscription;
-}
-
-export interface TeamMember {
-  userId: string;
-  teamId: string;
-  role: 'admin' | 'developer' | 'viewer';
-  joinedAt: Date;
-  permissions: TeamPermission[];
-  status: 'active' | 'invited' | 'suspended';
-  lastActive?: Date;
-}
-
-export interface TeamSettings {
-  defaultAIProvider: string;
-  sharedEscalationRules: EscalationRule[];
-  codeStandards: CodeStandard[];
-  workflowTemplates: WorkflowTemplate[];
-  notificationPreferences: NotificationSettings;
-  privacySettings: {
-    shareActivityByDefault: boolean;
-    allowCrossTeamSharing: boolean;
-    dataRetentionDays: number;
-  };
-}
-```
-
-### Real-time Collaboration
-```typescript
-// src/services/collaboration/real-time-service.ts
-export class RealTimeCollaborationService {
-  async joinTeamWorkspace(teamId: string, workspaceId: string): Promise<void>;
-  async leaveTeamWorkspace(teamId: string, workspaceId: string): Promise<void>;
-  
-  // Activity sharing
-  async broadcastActivity(teamId: string, activity: ActivityEvent): Promise<void>;
-  async subscribeToTeamActivity(teamId: string, callback: (activity: ActivityEvent) => void): void;
-  
-  // Live chat
-  async sendTeamMessage(teamId: string, channelId: string, message: string): Promise<void>;
-  async subscribeToTeamChat(teamId: string, channelId: string, callback: (message: ChatMessage) => void): void;
-  
-  // Collaborative sessions
-  async createCollaborativeSession(teamId: string, type: 'debugging' | 'workflow' | 'planning'): Promise<string>;
-  async joinCollaborativeSession(sessionId: string): Promise<void>;
-  async shareScreen(sessionId: string, screenData: ScreenShare): Promise<void>;
-}
-```
+Connect workflows to development environment:
+- **Context-aware Triggers** - Workflows triggered by editor events
+- **Workflow Execution Status** - Real-time workflow progress in VS Code
+- **Quick Actions** - Execute common workflows via command palette
+- **Custom Commands** - User-defined workflow shortcuts
 
 ## Implementation Priority
 
-1. **Critical**: Basic team creation and member management
-2. **Critical**: Team workspace and shared activity streams
-3. **High**: Real-time chat and presence
-4. **High**: Knowledge base with documents and patterns
-5. **Medium**: Collaborative editing features
-6. **Medium**: Team analytics and insights
-7. **Low**: Advanced collaboration features (screen sharing, etc.)
-8. **Low**: Enterprise features (SSO, advanced permissions)
+1. **Critical**: Basic extension setup and ACAS connection
+2. **Critical**: Activity monitoring and data sync
+3. **High**: AI assistant integration and code actions
+4. **High**: Workflow execution from VS Code
+5. **Medium**: Advanced UI components and tree views
+6. **Medium**: Configuration and customization options
+7. **Low**: Advanced features (collaborative editing, etc.)
+8. **Low**: Extension marketplace and distribution
 
 ## Success Criteria
 
-- Teams can be created and managed effectively
-- Real-time collaboration works smoothly across team members
-- Knowledge sharing increases team productivity
-- Team analytics provide actionable insights
-- Collaboration features have minimal latency (<500ms)
-- Knowledge base is searchable and well-organized
-- Team member onboarding is streamlined
+- Extension connects reliably to ACAS Runner
+- Real-time activity monitoring works without performance impact
+- AI suggestions appear contextually in VS Code
+- Workflows can be triggered and monitored from editor
+- Extension provides seamless developer experience
+- Configuration is intuitive and flexible
 
 ## Integration Points
 
-- **Activity Monitor** (Step 1): Share activities across team members
-- **AI Escalation** (Step 2): Team escalation rules and shared solutions
-- **Plugin System** (Step 3): Team-wide plugin sharing and templates
-- **Chat System** (Step 4): Team chat channels and collaboration
-- **Workflow Orchestration** (Step 5): Shared workflow templates
-- **Analytics** (Step 6): Team performance and collaboration metrics
+- **Activity Monitor** (Step 1): Real-time activity sync between VS Code and web app
+- **AI Escalation** (Step 2): Direct AI assistance within editor context
+- **Plugin System** (Step 3): Execute plugins from VS Code commands
+- **Chat System** (Step 4): Quick AI chat access from command palette
+- **Workflow Orchestration** (Step 5): Trigger and monitor workflows in editor
+- **Analytics** (Step 6): Contribute editor-specific metrics
+- **Team Collaboration** (Step 7): Share VS Code activity with team
 
 ## Files to Create/Modify
 
-- `src/app/(app)/teams/page.tsx` (new)
-- `src/services/collaboration/` (new directory)
-- `src/services/knowledge/` (new directory)
-- `src/components/teams/` (new directory)
-- `src/types/team.ts` (new)
-- `src/api/teams/` (new API routes)
-- Database migration for team tables
-- WebSocket handlers for real-time features
+### VS Code Extension
+- `vscode-extension/` (new directory)
+  - `src/extension.ts`
+  - `src/communication/acas-connection.ts`
+  - `src/monitoring/activity-monitor.ts`
+  - `src/ai/ai-assistant.ts`
+  - `src/workflows/workflow-manager.ts`
+  - `src/providers/`
+  - `src/ui/`
+  - `package.json`
+  - `tsconfig.json`
+
+### ACAS Runner Backend
+- `src/api/extension/` (new directory)
+- WebSocket handlers for extension communication
+- Extension-specific service layer
 
 ## Next Step
-After implementing team collaboration features, proceed to **Claude-Step8.md** for VS Code Extension development.
+After implementing the VS Code extension, proceed to **Claude-Step8.md** for Team Collaboration features.

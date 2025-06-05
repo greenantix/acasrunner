@@ -11,12 +11,21 @@ export interface ErrorDetails {
 
 export class ErrorMonitor {
   private isActive = false;
-  private originalErrorHandler: ((event: ErrorEvent) => boolean | void) | null = null;
+  private originalErrorHandler:
+    | ((
+        event: Event | string,
+        source?: string,
+        lineno?: number,
+        colno?: number,
+        error?: Error
+      ) => boolean | void)
+    | null = null;
   private originalRejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
 
   constructor() {
     this.handleError = this.handleError.bind(this);
     this.handleRejection = this.handleRejection.bind(this);
+    this.handleErrorEvent = this.handleErrorEvent.bind(this);
   }
 
   start(): void {
@@ -30,7 +39,7 @@ export class ErrorMonitor {
     this.originalRejectionHandler = window.onunhandledrejection;
 
     // Set up global error handlers
-    window.onerror = this.handleError;
+    window.addEventListener('error', this.handleErrorEvent);
     window.onunhandledrejection = this.handleRejection;
 
     // Set up console error override
@@ -46,7 +55,7 @@ export class ErrorMonitor {
     }
 
     // Restore original handlers
-    window.onerror = this.originalErrorHandler;
+    window.removeEventListener('error', this.handleErrorEvent);
     window.onunhandledrejection = this.originalRejectionHandler;
 
     this.isActive = false;
@@ -54,10 +63,10 @@ export class ErrorMonitor {
   }
 
   private handleError(
-    message: string | Event, 
-    filename?: string, 
-    lineno?: number, 
-    colno?: number, 
+    message: string | Event,
+    filename?: string,
+    lineno?: number,
+    colno?: number,
     error?: Error
   ): boolean | void {
     const errorDetails: ErrorDetails = {
@@ -66,7 +75,7 @@ export class ErrorMonitor {
       lineno,
       colno,
       stack: error?.stack,
-      source: 'window.onerror'
+      source: 'window.onerror',
     };
 
     this.logError(errorDetails);
@@ -74,10 +83,10 @@ export class ErrorMonitor {
     // Call original handler if it exists
     if (this.originalErrorHandler) {
       return this.originalErrorHandler(
-        message as any, 
-        filename, 
-        lineno, 
-        colno, 
+        message as ErrorEvent | Event,
+        filename,
+        lineno,
+        colno,
         error
       );
     }
@@ -85,12 +94,25 @@ export class ErrorMonitor {
     return false;
   }
 
+  private handleErrorEvent(event: ErrorEvent): void {
+    const errorDetails: ErrorDetails = {
+      message: event.message || 'Unknown error',
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+      stack: event.error?.stack,
+      source: 'window.error',
+    };
+
+    this.logError(errorDetails);
+  }
+
   private handleRejection(event: PromiseRejectionEvent): void {
     const error = event.reason;
     const errorDetails: ErrorDetails = {
       message: error?.message || 'Unhandled promise rejection',
       stack: error?.stack,
-      source: 'unhandledrejection'
+      source: 'unhandledrejection',
     };
 
     this.logError(errorDetails);
@@ -103,19 +125,19 @@ export class ErrorMonitor {
 
   private overrideConsoleError(): void {
     const originalConsoleError = console.error;
-    
+
     console.error = (...args: any[]) => {
       // Call original console.error first
       originalConsoleError.apply(console, args);
 
       // Log to our activity system
-      const message = args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' ');
+      const message = args
+        .map(arg => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
+        .join(' ');
 
       const errorDetails: ErrorDetails = {
         message: `Console Error: ${message}`,
-        source: 'console.error'
+        source: 'console.error',
       };
 
       this.logError(errorDetails);
@@ -124,7 +146,7 @@ export class ErrorMonitor {
 
   private logError(errorDetails: ErrorDetails): void {
     const severity = this.determineSeverity(errorDetails);
-    
+
     const activity: ActivityEvent = {
       id: this.generateId(),
       timestamp: new Date(),
@@ -134,12 +156,12 @@ export class ErrorMonitor {
       details: {
         errorStack: errorDetails.stack,
         filePath: errorDetails.filename,
-        severity
+        severity,
       },
       metadata: {
         lineno: errorDetails.lineno,
-        colno: errorDetails.colno
-      }
+        colno: errorDetails.colno,
+      },
     };
 
     activityService.addActivity(activity);
@@ -147,29 +169,32 @@ export class ErrorMonitor {
 
   private determineSeverity(errorDetails: ErrorDetails): 'low' | 'medium' | 'high' | 'critical' {
     const message = errorDetails.message.toLowerCase();
-    
+
     // Critical errors
-    if (message.includes('fatal') || 
-        message.includes('cannot read property') ||
-        message.includes('is not a function') ||
-        message.includes('network error')) {
+    if (
+      message.includes('fatal') ||
+      message.includes('cannot read property') ||
+      message.includes('is not a function') ||
+      message.includes('network error')
+    ) {
       return 'critical';
     }
-    
+
     // High severity errors
-    if (message.includes('error') || 
-        message.includes('exception') ||
-        message.includes('failed') ||
-        errorDetails.stack) {
+    if (
+      message.includes('error') ||
+      message.includes('exception') ||
+      message.includes('failed') ||
+      errorDetails.stack
+    ) {
       return 'high';
     }
-    
+
     // Medium severity
-    if (message.includes('warning') || 
-        message.includes('deprecated')) {
+    if (message.includes('warning') || message.includes('deprecated')) {
       return 'medium';
     }
-    
+
     return 'low';
   }
 
@@ -181,7 +206,7 @@ export class ErrorMonitor {
     const errorDetails: ErrorDetails = {
       message: error.message,
       stack: error.stack,
-      source
+      source,
     };
 
     const activity: ActivityEvent = {
@@ -192,9 +217,9 @@ export class ErrorMonitor {
       message: error.message,
       details: {
         errorStack: error.stack,
-        severity: this.determineSeverity(errorDetails)
+        severity: this.determineSeverity(errorDetails),
       },
-      metadata: context
+      metadata: context,
     };
 
     activityService.addActivity(activity);

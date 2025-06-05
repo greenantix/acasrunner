@@ -60,6 +60,9 @@ export abstract class BaseLLMProvider {
   abstract sendRequest(request: LLMRequest): Promise<LLMResponse>;
   abstract testConnection(): Promise<boolean>;
   abstract isRateLimited(): boolean;
+  abstract generateResponse(request: LLMRequest): Promise<LLMResponse>;
+  abstract streamResponse(request: LLMRequest): AsyncIterable<string>;
+  abstract getAvailableModels(): Promise<string[]>;
 
   getId(): string {
     return this.config.id;
@@ -101,7 +104,7 @@ Guidelines:
 
   protected formatErrorForAI(error: string, context?: string): string {
     let prompt = `Please analyze this error and provide a solution:\n\nError: ${error}`;
-    
+
     if (context) {
       prompt += `\n\nAdditional Context:\n${context}`;
     }

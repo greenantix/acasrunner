@@ -20,6 +20,7 @@ export interface ActivityEvent {
     errorStack?: string;
     severity?: 'low' | 'medium' | 'high' | 'critical';
     environment?: string;
+    exitCode?: number;
   };
   metadata?: Record<string, any>;
 }

@@ -1,4 +1,4 @@
-import chokidar from 'chokidar';
+import * as chokidar from 'chokidar';
 import { ActivityEvent } from './activity-service';
 
 export interface FileSystemMonitorConfig {
@@ -8,14 +8,11 @@ export interface FileSystemMonitorConfig {
 }
 
 export class FileSystemMonitor {
-  private watcher: chokidar.FSWatcher | null = null;
+  private watcher: any | null = null;
   private config: FileSystemMonitorConfig;
   private onActivity: (event: ActivityEvent) => void;
 
-  constructor(
-    config: FileSystemMonitorConfig,
-    onActivity: (event: ActivityEvent) => void
-  ) {
+  constructor(config: FileSystemMonitorConfig, onActivity: (event: ActivityEvent) => void) {
     this.config = config;
     this.onActivity = onActivity;
   }
@@ -34,7 +31,7 @@ export class FileSystemMonitor {
       '**/.claude-cache/**',
       '**/lib/**',
       '**/*.log',
-      '**/package-lock.json'
+      '**/package-lock.json',
     ];
 
     this.watcher = chokidar.watch(this.config.watchPaths, {
@@ -43,17 +40,17 @@ export class FileSystemMonitor {
       persistent: true,
       awaitWriteFinish: {
         stabilityThreshold: 300,
-        pollInterval: 100
-      }
+        pollInterval: 100,
+      },
     });
 
     this.watcher
-      .on('add', (path) => this.handleFileEvent('created', path))
-      .on('change', (path) => this.handleFileEvent('modified', path))
-      .on('unlink', (path) => this.handleFileEvent('deleted', path))
-      .on('addDir', (path) => this.handleDirectoryEvent('created', path))
-      .on('unlinkDir', (path) => this.handleDirectoryEvent('deleted', path))
-      .on('error', (error) => this.handleError(error))
+      .on('add', (path: string) => this.handleFileEvent('created', path))
+      .on('change', (path: string) => this.handleFileEvent('modified', path))
+      .on('unlink', (path: string) => this.handleFileEvent('deleted', path))
+      .on('addDir', (path: string) => this.handleDirectoryEvent('created', path))
+      .on('unlinkDir', (path: string) => this.handleDirectoryEvent('deleted', path))
+      .on('error', (error: Error) => this.handleError(error))
       .on('ready', () => {
         console.log('File system monitor is ready and watching for changes');
         this.emitSystemEvent('File system monitoring started');
@@ -71,9 +68,9 @@ export class FileSystemMonitor {
   private handleFileEvent(changeType: 'created' | 'modified' | 'deleted', filePath: string): void {
     const relativePath = this.getRelativePath(filePath);
     const fileName = this.getFileName(filePath);
-    
+
     const message = `File ${changeType}: ${fileName}`;
-    
+
     this.onActivity({
       id: this.generateId(),
       timestamp: new Date(),
@@ -83,17 +80,17 @@ export class FileSystemMonitor {
       details: {
         filePath: relativePath,
         changeType,
-        severity: 'low'
-      }
+        severity: 'low',
+      },
     });
   }
 
   private handleDirectoryEvent(changeType: 'created' | 'deleted', dirPath: string): void {
     const relativePath = this.getRelativePath(dirPath);
     const dirName = this.getFileName(dirPath);
-    
+
     const message = `Directory ${changeType}: ${dirName}`;
-    
+
     this.onActivity({
       id: this.generateId(),
       timestamp: new Date(),
@@ -103,8 +100,8 @@ export class FileSystemMonitor {
       details: {
         filePath: relativePath,
         changeType,
-        severity: 'low'
-      }
+        severity: 'low',
+      },
     });
   }
 
@@ -117,8 +114,8 @@ export class FileSystemMonitor {
       message: `File system monitoring error: ${error.message}`,
       details: {
         errorStack: error.stack,
-        severity: 'medium'
-      }
+        severity: 'medium',
+      },
     });
   }
 
@@ -130,8 +127,8 @@ export class FileSystemMonitor {
       source: 'file-system-monitor',
       message,
       details: {
-        severity: 'low'
-      }
+        severity: 'low',
+      },
     });
   }
 

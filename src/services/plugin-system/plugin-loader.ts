@@ -14,10 +14,10 @@ export class PluginLoader {
       // For security, we'd want to validate the URL and implement proper sandboxing
       const response = await fetch(url);
       const pluginCode = await response.text();
-      
+
       // Create a safe execution context
       const plugin = await this.executePluginCode(pluginCode, url);
-      
+
       this.loadedPlugins.set(plugin.id, plugin);
       return plugin;
     } catch (error) {
@@ -29,7 +29,7 @@ export class PluginLoader {
     try {
       const pluginCode = await file.text();
       const plugin = await this.executePluginCode(pluginCode, file.name);
-      
+
       this.loadedPlugins.set(plugin.id, plugin);
       return plugin;
     } catch (error) {
@@ -42,11 +42,11 @@ export class PluginLoader {
       // Dynamic import for built-in plugins
       const module = await import(`../../../plugins/${pluginName}`);
       const plugin = module.default;
-      
+
       if (!this.validatePlugin(plugin)) {
         throw new Error(`Invalid plugin structure: ${pluginName}`);
       }
-      
+
       this.loadedPlugins.set(plugin.id, plugin);
       return plugin;
     } catch (error) {
@@ -58,19 +58,24 @@ export class PluginLoader {
     try {
       // Create a sandboxed execution environment
       const sandbox = this.createSandbox();
-      
+
       // Execute the plugin code in the sandbox
-      const pluginFactory = new Function('api', 'exports', 'require', `
+      const pluginFactory = new Function(
+        'api',
+        'exports',
+        'require',
+        `
         ${code}
         return exports.default || exports;
-      `);
-      
+      `
+      );
+
       const plugin = pluginFactory(this.pluginAPI, {}, this.createRequireFunction());
-      
+
       if (!this.validatePlugin(plugin)) {
         throw new Error(`Invalid plugin structure from ${source}`);
       }
-      
+
       return plugin;
     } catch (error) {
       throw new Error(`Failed to execute plugin code from ${source}: ${error}`);
@@ -92,19 +97,19 @@ export class PluginLoader {
       fetch: (url: string, init?: RequestInit) => {
         // Restrict network access if needed
         return fetch(url, init);
-      }
+      },
     };
   }
 
   private createRequireFunction() {
     // Limited require function for plugins
     const allowedModules = new Set(['react', 'react-dom']);
-    
+
     return (moduleName: string) => {
       if (!allowedModules.has(moduleName)) {
         throw new Error(`Module ${moduleName} is not allowed in plugins`);
       }
-      
+
       // Return the actual module or a mock
       switch (moduleName) {
         case 'react':
@@ -125,20 +130,25 @@ export class PluginLoader {
       typeof plugin.version === 'string' &&
       typeof plugin.author === 'string' &&
       typeof plugin.description === 'string' &&
-      typeof plugin.initialize === 'function' &&
-      typeof plugin.destroy === 'function'
+      (plugin.initialize === undefined || typeof plugin.initialize === 'function') &&
+      (plugin.destroy === undefined || typeof plugin.destroy === 'function')
     );
   }
 
   async createInstance(plugin: Plugin): Promise<PluginInstance> {
     try {
-      await plugin.initialize(this.pluginAPI);
-      
+      if (plugin.initialize) {
+        await plugin.initialize();
+      }
+
       return {
         plugin,
         status: 'active',
+        initialized: true,
+        config: {},
+        api: this.pluginAPI.createPluginAPI(plugin.id),
         loadedAt: new Date(),
-        instance: plugin
+        instance: plugin,
       };
     } catch (error) {
       throw new Error(`Failed to create plugin instance for ${plugin.name}: ${error}`);

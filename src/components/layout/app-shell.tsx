@@ -30,6 +30,7 @@ import {
   SearchCheck,
   SettingsIcon,
   Waypoints,
+  BarChart3,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -38,6 +39,7 @@ import { Logo } from './logo';
 
 const navItems = [
   { href: '/dashboard', label: 'Activity Monitor', icon: LayoutDashboard },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/chat', label: 'AI Escalation', icon: BotMessageSquare },
   { href: '/trace', label: 'AI Trace', icon: Waypoints },
   { href: '/diagnostics', label: 'Diagnostics', icon: SearchCheck },

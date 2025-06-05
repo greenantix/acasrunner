@@ -174,7 +174,8 @@ export class EscalationManager {
       
       // Notify plugins about the error
       if (this.pluginRegistry) {
-        await this.notifyPlugins('escalation_error', { event, error: error.message });
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        await this.notifyPlugins('escalation_error', { event, error: errorMessage });
       }
     } finally {
       this.isProcessing = false;
@@ -182,8 +183,8 @@ export class EscalationManager {
   }
 
   private async analyzeProblem(event: ActivityEvent): Promise<Problem | null> {
-    // Skip non-error events
-    if (event.type !== 'error' && event.type !== 'warning') {
+    // Skip non-error events (note: ActivityEvent doesn't include 'warning' type)
+    if (event.type !== 'error') {
       return null;
     }
 
@@ -192,10 +193,10 @@ export class EscalationManager {
     
     // Analyze error pattern
     const errorPattern = this.errorAnalyzer.analyzeError(
-      event.details.error || event.details.message || '',
+      event.details?.error || event.details?.message || '',
       {
         recentErrors,
-        fileExtension: this.extractFileExtension(event.details.filePath),
+        fileExtension: this.extractFileExtension(event.details?.filePath),
         errorCount: recentErrors.length,
         timeWindow: 30
       }
@@ -219,9 +220,9 @@ export class EscalationManager {
       errorPattern,
       context: {
         recentErrors,
-        fileContext: event.details.filePath,
-        stackTrace: event.details.stack,
-        environment: event.details.environment
+        fileContext: event.details?.filePath,
+        stackTrace: event.details?.stack,
+        environment: event.details?.environment
       },
       analysis: {
         severity: errorPattern.severity,
@@ -266,8 +267,8 @@ export class EscalationManager {
 
       // Check keywords
       if (triggers.keywords.length > 0) {
-        const errorText = (problem.source.details.error || 
-                          problem.source.details.message || '').toLowerCase();
+        const errorText = (problem.source.details?.error || 
+                          problem.source.details?.message || '').toLowerCase();
         const hasKeyword = triggers.keywords.some(keyword => 
           errorText.includes(keyword.toLowerCase())
         );
@@ -343,7 +344,7 @@ export class EscalationManager {
         severity: problem.analysis.severity,
         provider: rule.actions.provider,
         context: problem.context,
-        aiResponse: `Escalation failed: ${error.message}`,
+        aiResponse: `Escalation failed: ${error instanceof Error ? error.message : String(error)}`,
         suggestions: ['Manual review required'],
         status: 'escalated_to_human',
         confidence: 0
@@ -355,7 +356,7 @@ export class EscalationManager {
 
   private prepareContext(problem: Problem, includeFullContext: boolean): any {
     const baseContext = {
-      error: problem.source.details.error || problem.source.details.message,
+      error: problem.source.details?.error || problem.source.details?.message,
       errorType: problem.errorPattern.type,
       severity: problem.analysis.severity,
       confidence: problem.analysis.confidence,
@@ -385,7 +386,7 @@ export class EscalationManager {
     try {
       // Use the existing escalation flow
       const result = await escalateCodingProblem({
-        error: problem.source.details.error || problem.source.details.message || 'Unknown error',
+        error: problem.source.details?.error || problem.source.details?.message || 'Unknown error',
         context: JSON.stringify(context, null, 2)
       });
 
@@ -404,7 +405,7 @@ export class EscalationManager {
 
       const request: LLMRequest = {
         prompt: `Analyze this coding problem:
-Error: ${problem.source.details.error || problem.source.details.message}
+Error: ${problem.source.details?.error || problem.source.details?.message}
 Type: ${problem.errorPattern.type}
 Context: ${JSON.stringify(context, null, 2)}
 
@@ -487,7 +488,8 @@ Provide a brief explanation and suggested actions.`,
       });
       return result.explanation;
     } catch (error) {
-      throw new Error(`AI assistance request failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`AI assistance request failed: ${errorMessage}`);
     }
   }
 
@@ -512,7 +514,8 @@ Provide a brief explanation and suggested actions.`,
       escalationEvent.status = 'resolved';
       escalationEvent.suggestions = ['Review AI analysis', 'Implement suggested fixes'];
     } catch (error) {
-      escalationEvent.aiResponse = `Failed to get AI assistance: ${error.message}`;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      escalationEvent.aiResponse = `Failed to get AI assistance: ${errorMessage}`;
       escalationEvent.status = 'escalated_to_human';
       escalationEvent.suggestions = ['Manual review required'];
     }
@@ -593,6 +596,7 @@ Provide a brief explanation and suggested actions.`,
       timestamp: new Date(),
       type: 'error',
       source: 'test',
+      message: `Test error: ${testError}`,
       details: {
         error: testError,
         message: testError,

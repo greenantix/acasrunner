@@ -10,8 +10,14 @@ export interface ActivityEvent {
     filePath?: string;
     changeType?: 'created' | 'modified' | 'deleted';
     linesChanged?: { added: number; removed: number };
+    error?: string;
+    message?: string;
+    stack?: string;
+    level?: string;
     errorStack?: string;
     severity?: 'low' | 'medium' | 'high' | 'critical';
+    environment?: string;
+    exitCode?: number;
   };
   metadata?: Record<string, any>;
 }
@@ -19,7 +25,7 @@ export interface ActivityEvent {
 export interface ActivityFilter {
   types?: ActivityEvent['type'][];
   sources?: string[];
-  severity?: ActivityEvent['details']['severity'][];
+  severity?: ('low' | 'medium' | 'high' | 'critical')[];
   startDate?: Date;
   endDate?: Date;
   searchText?: string;

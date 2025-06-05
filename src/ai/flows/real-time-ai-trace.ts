@@ -1,4 +1,3 @@
-'use server';
 /**
  * @fileOverview Implements the Real-time AI Trace flow, displaying the AI's decision-making process.
  *

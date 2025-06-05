@@ -1,36 +1,34 @@
-import { 
-  ExportFormat, 
-  ChatSession, 
-  ChatMessage, 
-  MarkdownExportOptions,
+import {
+  DocxExportOptions,
+  ExportFormat,
   HTMLExportOptions,
+  MarkdownExportOptions,
   PDFExportOptions,
-  DocxExportOptions
 } from '@/types/chat';
 import { chatService } from './chat-service';
 
 export class ExportService {
   async exportToMarkdown(
-    sessionId: string, 
+    sessionId: string,
     options: MarkdownExportOptions = {
       includeMetadata: true,
       includeTimestamps: true,
       codeBlockLanguage: 'markdown',
-      headerLevel: 1
+      headerLevel: 1,
     }
   ): Promise<string> {
     const session = await chatService.getSession(sessionId);
     const messages = await chatService.getMessages(sessionId);
-    
+
     if (!session) {
       throw new Error('Session not found');
     }
 
     let markdown = '';
-    
+
     // Header
     markdown += `${'#'.repeat(options.headerLevel)} ${session.name}\n\n`;
-    
+
     if (options.includeMetadata) {
       markdown += `**Provider:** ${session.provider}\n`;
       markdown += `**Model:** ${session.model}\n`;
@@ -46,15 +44,15 @@ export class ExportService {
     for (const message of messages) {
       const roleIcon = message.role === 'user' ? '👤' : message.role === 'assistant' ? '🤖' : '⚙️';
       markdown += `### ${roleIcon} ${message.role.charAt(0).toUpperCase() + message.role.slice(1)}\n\n`;
-      
+
       if (options.includeTimestamps) {
         markdown += `*${message.timestamp.toLocaleString()}*\n\n`;
       }
-      
+
       // Format code blocks
       const content = this.formatCodeInMarkdown(message.content);
       markdown += `${content}\n\n`;
-      
+
       // Attachments
       if (message.metadata.attachments && message.metadata.attachments.length > 0) {
         markdown += '**Attachments:**\n';
@@ -63,7 +61,7 @@ export class ExportService {
         }
         markdown += '\n';
       }
-      
+
       markdown += '---\n\n';
     }
 
@@ -73,49 +71,55 @@ export class ExportService {
   async exportToJSON(sessionId: string, includeMetadata: boolean = true): Promise<string> {
     const session = await chatService.getSession(sessionId);
     const messages = await chatService.getMessages(sessionId);
-    
+
     if (!session) {
       throw new Error('Session not found');
     }
 
     const exportData = {
-      session: includeMetadata ? session : {
-        id: session.id,
-        name: session.name,
-        provider: session.provider,
-        model: session.model
-      },
-      messages: messages.map(message => includeMetadata ? message : {
-        id: message.id,
-        role: message.role,
-        content: message.content,
-        timestamp: message.timestamp
-      }),
+      session: includeMetadata
+        ? session
+        : {
+            id: session.id,
+            name: session.name,
+            provider: session.provider,
+            model: session.model,
+          },
+      messages: messages.map(message =>
+        includeMetadata
+          ? message
+          : {
+              id: message.id,
+              role: message.role,
+              content: message.content,
+              timestamp: message.timestamp,
+            }
+      ),
       exportedAt: new Date().toISOString(),
       format: 'json',
-      version: '1.0'
+      version: '1.0',
     };
 
     return JSON.stringify(exportData, null, 2);
   }
 
   async exportToHTML(
-    sessionId: string, 
+    sessionId: string,
     options: HTMLExportOptions = {
       includeCSS: true,
       darkMode: false,
-      includeMetadata: true
+      includeMetadata: true,
     }
   ): Promise<string> {
     const session = await chatService.getSession(sessionId);
     const messages = await chatService.getMessages(sessionId);
-    
+
     if (!session) {
       throw new Error('Session not found');
     }
 
     const css = options.includeCSS ? this.getHTMLStyles(options.darkMode) : '';
-    
+
     let html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -146,7 +150,7 @@ export class ExportService {
     for (const message of messages) {
       const roleClass = `message-${message.role}`;
       const roleIcon = message.role === 'user' ? '👤' : message.role === 'assistant' ? '🤖' : '⚙️';
-      
+
       html += `
             <div class="message ${roleClass}">
                 <div class="message-header">
@@ -157,7 +161,7 @@ export class ExportService {
                 <div class="message-content">
                     ${this.formatContentForHTML(message.content)}
                 </div>`;
-      
+
       if (message.metadata.attachments && message.metadata.attachments.length > 0) {
         html += `
                 <div class="attachments">
@@ -170,7 +174,7 @@ export class ExportService {
                     </ul>
                 </div>`;
       }
-      
+
       html += `
             </div>`;
     }
@@ -190,7 +194,7 @@ export class ExportService {
   async exportToPlaintext(sessionId: string): Promise<string> {
     const session = await chatService.getSession(sessionId);
     const messages = await chatService.getMessages(sessionId);
-    
+
     if (!session) {
       throw new Error('Session not found');
     }
@@ -207,7 +211,7 @@ export class ExportService {
       const roleLabel = message.role.toUpperCase();
       text += `[${roleLabel}] ${message.timestamp.toLocaleString()}\n`;
       text += `${message.content}\n\n`;
-      
+
       if (message.metadata.attachments && message.metadata.attachments.length > 0) {
         text += 'Attachments:\n';
         for (const attachment of message.metadata.attachments) {
@@ -215,7 +219,7 @@ export class ExportService {
         }
         text += '\n';
       }
-      
+
       text += `${'-'.repeat(30)}\n\n`;
     }
 
@@ -229,7 +233,7 @@ export class ExportService {
     const htmlContent = await this.exportToHTML(sessionId, {
       includeCSS: true,
       darkMode: false,
-      includeMetadata: true
+      includeMetadata: true,
     });
 
     // This is a placeholder - you'd need to implement actual PDF generation
@@ -243,13 +247,16 @@ export class ExportService {
     throw new Error('DOCX export not yet implemented. Please use Markdown or HTML export for now.');
   }
 
-  async exportMultipleSessions(sessionIds: string[], format: ExportFormat): Promise<string | Buffer> {
+  async exportMultipleSessions(
+    sessionIds: string[],
+    format: ExportFormat
+  ): Promise<string | Buffer> {
     const exports: string[] = [];
-    
+
     for (const sessionId of sessionIds) {
       try {
         let content: string;
-        
+
         switch (format) {
           case 'markdown':
             content = await this.exportToMarkdown(sessionId);
@@ -266,23 +273,28 @@ export class ExportService {
           default:
             throw new Error(`Bulk export not supported for format: ${format}`);
         }
-        
+
         exports.push(content);
       } catch (error) {
-        console.error(`Failed to export session ${sessionId}:`, error);
-        exports.push(`Error exporting session ${sessionId}: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Failed to export session ${sessionId}:`, errorMessage);
+        exports.push(`Error exporting session ${sessionId}: ${errorMessage}`);
       }
     }
 
     if (format === 'json') {
-      return JSON.stringify({
-        sessions: exports.map((content, index) => ({
-          sessionId: sessionIds[index],
-          content: JSON.parse(content)
-        })),
-        exportedAt: new Date().toISOString(),
-        format: 'bulk-json'
-      }, null, 2);
+      return JSON.stringify(
+        {
+          sessions: exports.map((content, index) => ({
+            sessionId: sessionIds[index],
+            content: JSON.parse(content),
+          })),
+          exportedAt: new Date().toISOString(),
+          format: 'bulk-json',
+        },
+        null,
+        2
+      );
     }
 
     return exports.join('\n\n' + '='.repeat(80) + '\n\n');
@@ -435,10 +447,39 @@ export class ExportService {
       throw new Error('Download only available in browser environment');
     }
 
-    const blob = new Blob([content], { 
-      type: mimeType || 'application/octet-stream' 
+    const blobContent: BlobPart[] = [];
+    if (typeof content === 'string') {
+      blobContent.push(content);
+    } else if (Buffer.isBuffer(content)) {
+      // Convert Buffer to ArrayBuffer
+      let arrayBuffer = content.buffer.slice(
+        content.byteOffset,
+        content.byteOffset + content.byteLength
+      );
+      if (arrayBuffer instanceof SharedArrayBuffer) {
+        // Create a new ArrayBuffer from SharedArrayBuffer
+        const newArrayBuffer = new ArrayBuffer(arrayBuffer.byteLength);
+        new Uint8Array(newArrayBuffer).set(new Uint8Array(arrayBuffer));
+        arrayBuffer = newArrayBuffer;
+      }
+      blobContent.push(arrayBuffer);
+    } else {
+      // This case might need more specific handling if 'content' can be other BlobPart types
+      // For now, assuming it might be an ArrayBuffer or needs to be cast
+      let unknownContent = content as unknown;
+      if (unknownContent instanceof SharedArrayBuffer) {
+        // Create a new ArrayBuffer from SharedArrayBuffer
+        const newArrayBuffer = new ArrayBuffer(unknownContent.byteLength);
+        new Uint8Array(newArrayBuffer).set(new Uint8Array(unknownContent));
+        unknownContent = newArrayBuffer;
+      }
+      blobContent.push(unknownContent as ArrayBuffer);
+    }
+
+    const blob = new Blob(blobContent, {
+      type: mimeType || 'application/octet-stream',
     });
-    
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
