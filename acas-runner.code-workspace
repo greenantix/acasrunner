@@ -1,0 +1,119 @@
+{
+  "folders": [
+    {
+      "name": "🚀 ACAS Runner (Main)",
+      "path": "."
+    },
+    {
+      "name": "⚡ Functions",
+      "path": "./functions"
+    },
+    {
+      "name": "🔧 ACAS Runner Backend",
+      "path": "./acasrunner"
+    },
+    {
+      "name": "📚 Documentation",
+      "path": "./docs"
+    }
+  ],
+  "settings": {
+    "claude.projectName": "ACAS Runner",
+    "claude.multiFolder": true,
+    "claude.contextPaths": [
+      "./src",
+      "./components", 
+      "./functions/src",
+      "./acasrunner/src",
+      "./docs"
+    ],
+    "claude.excludePaths": [
+      "./node_modules",
+      "./.next", 
+      "./dist",
+      "./.git",
+      "./.claude-cache"
+    ],
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.next": true,
+      "**/dist": true,
+      "**/.git": true,
+      "**/.claude-cache": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/.next": true,
+      "**/dist": true,
+      "**/.git": true,
+      "**/.claude-cache": true,
+      "*.log": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-vscode.vscode-typescript-next",
+      "bradlc.vscode-tailwindcss", 
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "ms-vscode.vscode-json",
+      "yzhang.markdown-all-in-one",
+      "christian-kohler.path-intellisense",
+      "usernamehw.errorlens",
+      "gruntfuggly.todo-tree",
+      "streetsidesoftware.code-spell-checker",
+      "github.copilot",
+      "github.copilot-chat"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "🚀 Start Development Server",
+        "type": "shell",
+        "command": "npm run dev",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared",
+          "showReuseMessage": true,
+          "clear": false
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "🤖 Start with AI Services",
+        "type": "shell", 
+        "command": "npm run dev:ai",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        }
+      },
+      {
+        "label": "🧪 Run Tests",
+        "type": "shell",
+        "command": "npm test",
+        "group": "test"
+      },
+      {
+        "label": "🎯 Type Check",
+        "type": "shell",
+        "command": "npm run type-check",
+        "group": "build"
+      },
+      {
+        "label": "✨ Lint & Format",
+        "type": "shell",
+        "command": "npm run lint && npm run format",
+        "group": "build"
+      }
+    ]
+  }
+}

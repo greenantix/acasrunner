@@ -1,0 +1,27 @@
+{
+  "recommendations": [
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "ms-vscode.vscode-json",
+    "yzhang.markdown-all-in-one",
+    "christian-kohler.path-intellisense",
+    "bradlc.vscode-tailwindcss",
+    "formulahendry.auto-rename-tag",
+    "ms-vscode.vscode-typescript-next",
+    "usernamehw.errorlens",
+    "gruntfuggly.todo-tree",
+    "streetsidesoftware.code-spell-checker",
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-playwright.playwright",
+    "firefox-devtools.vscode-firefox-debug",
+    "github.copilot",
+    "github.copilot-chat",
+    "ms-vscode.remote-repositories"
+  ],
+  "unwantedRecommendations": [
+    "ms-vscode.vscode-typescript"
+  ]
+}

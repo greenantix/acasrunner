@@ -1,0 +1,126 @@
+{
+  "version": "1.0",
+  "project": {
+    "name": "ACAS Runner",
+    "type": "next.js",
+    "language": "typescript",
+    "framework": "react",
+    "description": "AI-powered developer workflow automation system",
+    "root": "D:\\AI\\acas-runner-local"
+  },
+  "tools": {
+    "file_operations": {
+      "enabled": true,
+      "watch_patterns": [
+        "src/**/*",
+        "components/**/*",
+        "pages/**/*",
+        "lib/**/*",
+        "functions/**/*",
+        "acasrunner/**/*"
+      ],
+      "ignore_patterns": [
+        "node_modules/**/*",
+        ".next/**/*",
+        "dist/**/*",
+        ".git/**/*",
+        "*.log",
+        ".env*",
+        "keyfile.json"
+      ],
+      "max_file_size": "1MB",
+      "auto_format": true,
+      "auto_lint": true,
+      "backup_on_change": true
+    },
+    "git_integration": {
+      "enabled": true,
+      "auto_stage": true,
+      "auto_commit_on_success": false,
+      "commit_message_template": "feat: {description}",
+      "branch_naming": "feature/{ticket-id}-{description}",
+      "ignore_sensitive_files": true
+    },
+    "ai_assistance": {
+      "primary_provider": "anthropic",
+      "fallback_providers": ["openai", "deepseek", "google"],
+      "context_awareness": true,
+      "code_analysis": true,
+      "auto_documentation": true,
+      "error_explanation": true,
+      "performance_optimization": true
+    },
+    "development_server": {
+      "auto_start": false,
+      "port": 9002,
+      "open_browser": false,
+      "hot_reload": true,
+      "enable_turbo": true
+    },
+    "testing": {
+      "auto_run_tests": false,
+      "test_on_save": false,
+      "coverage_reporting": true,
+      "e2e_testing": true
+    },
+    "database": {
+      "neo4j_enabled": true,
+      "firestore_enabled": true,
+      "auto_migrate": false
+    },
+    "monitoring": {
+      "langchain_tracing": true,
+      "performance_monitoring": true,
+      "error_tracking": true
+    }
+  },
+  "integrations": {
+    "firebase": {
+      "enabled": true,
+      "project_id": "bios-4c01e",
+      "auto_deploy": false
+    },
+    "google_cloud": {
+      "enabled": true,
+      "project_id": "bios-460722"
+    },
+    "langchain": {
+      "enabled": true,
+      "project": "biOS",
+      "tracing": true
+    },
+    "neo4j": {
+      "enabled": true,
+      "uri": "bolt://localhost:7687"
+    }
+  },
+  "workflows": {
+    "code_review": {
+      "enabled": true,
+      "on_pull_request": true,
+      "ai_reviewer": "claude-3-sonnet",
+      "include_security_scan": true
+    },
+    "documentation": {
+      "enabled": true,
+      "auto_generate": true,
+      "formats": ["markdown", "jsdoc"],
+      "include_api_docs": true
+    },
+    "deployment": {
+      "staging_branch": "staging",
+      "production_branch": "main",
+      "auto_deploy_staging": false
+    }
+  },
+  "security": {
+    "scan_for_secrets": true,
+    "exclude_sensitive_files": [
+      "*.env*",
+      "keyfile.json",
+      "*.pem",
+      "*.key"
+    ],
+    "api_key_validation": true
+  }
+}

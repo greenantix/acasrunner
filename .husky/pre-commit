@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Running pre-commit checks..."
+
+# Run type checking
+echo "🔍 Type checking..."
+npm run type-check
+
+# Run linting with auto-fix
+echo "🧹 Linting and fixing..."
+npm run lint:fix
+
+# Run formatting check
+echo "💅 Checking formatting..."
+npm run format:check
+
+# If we're in Claude Code mode, generate docs for changed files
+if [ "$CLAUDE_CODE_AUTO_COMMIT" = "true" ]; then
+  echo "📚 Updating documentation..."
+  npm run claude:docs
+fi
+
+echo "✅ Pre-commit checks completed!"
