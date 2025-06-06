@@ -1,7 +1,7 @@
 {
   "folders": [
     {
-      "name": "🚀 ACAS Runner (Main)",
+      "name": "🚀 leo Runner (Main)",
       "path": "."
     },
     {
@@ -9,8 +9,8 @@
       "path": "./functions"
     },
     {
-      "name": "🔧 ACAS Runner Backend",
-      "path": "./acasrunner"
+      "name": "🔧 leo Runner Backend",
+      "path": "./leorunner"
     },
     {
       "name": "📚 Documentation",
@@ -18,13 +18,13 @@
     }
   ],
   "settings": {
-    "claude.projectName": "ACAS Runner",
+    "claude.projectName": "leo Runner",
     "claude.multiFolder": true,
     "claude.contextPaths": [
       "./src",
       "./components", 
       "./functions/src",
-      "./acasrunner/src",
+      "./leorunner/src",
       "./docs"
     ],
     "claude.excludePaths": [
@@ -48,7 +48,8 @@
       "**/.git": true,
       "**/.claude-cache": true,
       "*.log": true
-    }
+    },
+    "powershell.cwd": "🚀 leo Runner (Main)"
   },
   "extensions": {
     "recommendations": [

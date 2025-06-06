@@ -1,34 +1,28 @@
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  limit as limitQuery, 
-  startAfter,
-  onSnapshot,
-  serverTimestamp,
-  Timestamp,
-  DocumentSnapshot
-} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { 
-  ChatSession, 
-  ChatMessage, 
-  ChatSettings, 
-  ChatAttachment, 
-  SessionFilters,
-  ChatSessionSummary,
+import {
+  ChatAttachment,
+  ChatMessage,
   ChatMetrics,
-  ChatStreamEvent,
-  StreamingResponse
+  ChatSession,
+  ChatSessionSummary,
+  ChatSettings,
+  SessionFilters,
 } from '@/types/chat';
-
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  limit as limitQuery,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
+} from 'firebase/firestore';
 export class ChatService {
   private readonly SESSIONS_COLLECTION = 'chat_sessions';
   private readonly MESSAGES_COLLECTION = 'chat_messages';
@@ -36,7 +30,7 @@ export class ChatService {
 
   // Session Management
   async createSession(
-    provider: string, 
+    provider: string,
     model: string,
     name?: string,
     settings?: Partial<ChatSettings>
@@ -46,7 +40,7 @@ export class ChatService {
       maxTokens: 4000,
       autoContext: true,
       contextWindow: 10,
-      ...settings
+      ...settings,
     };
 
     const sessionData = {
@@ -60,19 +54,19 @@ export class ChatService {
         totalTokens: 0,
         tags: [],
         starred: false,
-        archived: false
+        archived: false,
       },
       created: serverTimestamp(),
-      lastUpdated: serverTimestamp()
+      lastUpdated: serverTimestamp(),
     };
 
     const docRef = await addDoc(collection(db, this.SESSIONS_COLLECTION), sessionData);
-    
+
     return {
       id: docRef.id,
       ...sessionData,
       created: new Date(),
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     } as ChatSession;
   }
 
@@ -80,7 +74,7 @@ export class ChatService {
     try {
       const docRef = doc(db, this.SESSIONS_COLLECTION, sessionId);
       const docSnap = await getDoc(docRef);
-      
+
       if (!docSnap.exists()) {
         return null;
       }
@@ -90,7 +84,7 @@ export class ChatService {
         id: docSnap.id,
         ...data,
         created: data.created?.toDate() || new Date(),
-        lastUpdated: data.lastUpdated?.toDate() || new Date()
+        lastUpdated: data.lastUpdated?.toDate() || new Date(),
       } as ChatSession;
     } catch (error) {
       console.error('Error getting session:', error);
@@ -103,14 +97,14 @@ export class ChatService {
       const docRef = doc(db, this.SESSIONS_COLLECTION, sessionId);
       const updateData = {
         ...updates,
-        lastUpdated: serverTimestamp()
+        lastUpdated: serverTimestamp(),
       };
-      
+
       // Remove computed fields
       delete updateData.id;
       delete updateData.created;
       delete updateData.messages;
-      
+
       await updateDoc(docRef, updateData);
     } catch (error) {
       console.error('Error updating session:', error);
@@ -126,7 +120,7 @@ export class ChatService {
         where('sessionId', '==', sessionId)
       );
       const messagesSnapshot = await getDocs(messagesQuery);
-      
+
       const deletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
       await Promise.all(deletePromises);
 
@@ -141,10 +135,7 @@ export class ChatService {
 
   async listSessions(filters?: SessionFilters): Promise<ChatSessionSummary[]> {
     try {
-      let q = query(
-        collection(db, this.SESSIONS_COLLECTION),
-        orderBy('lastUpdated', 'desc')
-      );
+      let q = query(collection(db, this.SESSIONS_COLLECTION), orderBy('lastUpdated', 'desc'));
 
       if (filters?.provider) {
         q = query(q, where('provider', '==', filters.provider));
@@ -163,7 +154,7 @@ export class ChatService {
 
       for (const doc of snapshot.docs) {
         const data = doc.data();
-        
+
         // Get last message
         const messagesQuery = query(
           collection(db, this.MESSAGES_COLLECTION),
@@ -182,7 +173,7 @@ export class ChatService {
           messageCount: data.metadata?.messageCount || 0,
           provider: data.provider,
           starred: data.metadata?.starred || false,
-          archived: data.metadata?.archived || false
+          archived: data.metadata?.archived || false,
         });
       }
 
@@ -195,8 +186,8 @@ export class ChatService {
 
   // Message Management
   async sendMessage(
-    sessionId: string, 
-    content: string, 
+    sessionId: string,
+    content: string,
     role: 'user' | 'assistant' | 'system' = 'user',
     attachments?: ChatAttachment[]
   ): Promise<ChatMessage> {
@@ -209,24 +200,24 @@ export class ChatService {
         metadata: {
           attachments: attachments || [],
           reactions: [],
-          edits: []
+          edits: [],
         },
-        context: {}
+        context: {},
       };
 
       const docRef = await addDoc(collection(db, this.MESSAGES_COLLECTION), messageData);
-      
+
       // Update session message count
       const sessionRef = doc(db, this.SESSIONS_COLLECTION, sessionId);
       await updateDoc(sessionRef, {
-        'metadata.messageCount': (await this.getMessageCount(sessionId)),
-        lastUpdated: serverTimestamp()
+        'metadata.messageCount': await this.getMessageCount(sessionId),
+        lastUpdated: serverTimestamp(),
       });
 
       return {
         id: docRef.id,
         ...messageData,
-        timestamp: new Date()
+        timestamp: new Date(),
       } as ChatMessage;
     } catch (error) {
       console.error('Error sending message:', error);
@@ -247,11 +238,14 @@ export class ChatService {
       }
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate() || new Date()
-      } as ChatMessage));
+      return snapshot.docs.map(
+        doc =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+            timestamp: doc.data().timestamp?.toDate() || new Date(),
+          }) as ChatMessage
+      );
     } catch (error) {
       console.error('Error getting messages:', error);
       return [];
@@ -262,7 +256,7 @@ export class ChatService {
     try {
       const messageRef = doc(db, this.MESSAGES_COLLECTION, messageId);
       const messageDoc = await getDoc(messageRef);
-      
+
       if (!messageDoc.exists()) {
         throw new Error('Message not found');
       }
@@ -274,12 +268,12 @@ export class ChatService {
         originalContent,
         newContent,
         timestamp: new Date(),
-        reason: 'User edit'
+        reason: 'User edit',
       };
 
       await updateDoc(messageRef, {
         content: newContent,
-        'metadata.edits': [...(messageDoc.data().metadata?.edits || []), editRecord]
+        'metadata.edits': [...(messageDoc.data().metadata?.edits || []), editRecord],
       });
     } catch (error) {
       console.error('Error editing message:', error);
@@ -335,7 +329,7 @@ export class ChatService {
 
       // Update new session to reference parent
       await this.updateSession(newSession.id, {
-        parentSessionId: sessionId
+        parentSessionId: sessionId,
       });
 
       return newSession;
@@ -386,7 +380,7 @@ export class ChatService {
         where('sessionId', '==', sessionId)
       );
       const messagesSnapshot = await getDocs(messagesQuery);
-      
+
       const deletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
       await Promise.all(deletePromises);
 
@@ -397,8 +391,8 @@ export class ChatService {
           totalTokens: 0,
           tags: [],
           starred: false,
-          archived: false
-        }
+          archived: false,
+        },
       });
     } catch (error) {
       console.error('Error clearing messages:', error);
@@ -424,14 +418,14 @@ export class ChatService {
   // Real-time subscriptions
   subscribeToSession(sessionId: string, callback: (session: ChatSession | null) => void) {
     const sessionRef = doc(db, this.SESSIONS_COLLECTION, sessionId);
-    return onSnapshot(sessionRef, (doc) => {
+    return onSnapshot(sessionRef, doc => {
       if (doc.exists()) {
         const data = doc.data();
         callback({
           id: doc.id,
           ...data,
           created: data.created?.toDate() || new Date(),
-          lastUpdated: data.lastUpdated?.toDate() || new Date()
+          lastUpdated: data.lastUpdated?.toDate() || new Date(),
         } as ChatSession);
       } else {
         callback(null);
@@ -446,12 +440,15 @@ export class ChatService {
       orderBy('timestamp', 'asc')
     );
 
-    return onSnapshot(messagesQuery, (snapshot) => {
-      const messages = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate() || new Date()
-      } as ChatMessage));
+    return onSnapshot(messagesQuery, snapshot => {
+      const messages = snapshot.docs.map(
+        doc =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+            timestamp: doc.data().timestamp?.toDate() || new Date(),
+          }) as ChatMessage
+      );
       callback(messages);
     });
   }
@@ -460,20 +457,23 @@ export class ChatService {
   async searchMessages(searchQuery: string, sessionId?: string): Promise<ChatMessage[]> {
     try {
       let q = collection(db, this.MESSAGES_COLLECTION);
-      
+
       if (sessionId) {
         q = query(q, where('sessionId', '==', sessionId)) as any;
       }
 
       const snapshot = await getDocs(q);
-      const allMessages = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate() || new Date()
-      } as ChatMessage));
+      const allMessages = snapshot.docs.map(
+        doc =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+            timestamp: doc.data().timestamp?.toDate() || new Date(),
+          }) as ChatMessage
+      );
 
       // Client-side text search (for now)
-      return allMessages.filter(message => 
+      return allMessages.filter(message =>
         message.content.toLowerCase().includes(searchQuery.toLowerCase())
       );
     } catch (error) {
@@ -491,17 +491,21 @@ export class ChatService {
       const sessions = sessionsSnapshot.docs.map(doc => doc.data());
       const messages = messagesSnapshot.docs.map(doc => doc.data());
 
-      const totalTokens = sessions.reduce((sum, session) => 
-        sum + (session.metadata?.totalTokens || 0), 0
+      const totalTokens = sessions.reduce(
+        (sum, session) => sum + (session.metadata?.totalTokens || 0),
+        0
       );
 
-      const providerCount = sessions.reduce((acc, session) => {
-        acc[session.provider] = (acc[session.provider] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      const providerCount = sessions.reduce(
+        (acc, session) => {
+          acc[session.provider] = (acc[session.provider] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
 
-      const mostUsedProvider = Object.entries(providerCount)
-        .sort(([,a], [,b]) => b - a)[0]?.[0] || 'none';
+      const mostUsedProvider =
+        Object.entries(providerCount).sort(([, a], [, b]) => b - a)[0]?.[0] || 'none';
 
       return {
         totalSessions: sessions.length,
@@ -513,9 +517,11 @@ export class ChatService {
         providerUsage: Object.entries(providerCount).map(([provider, count]) => ({
           provider,
           sessions: count,
-          messages: messages.filter(m => sessions.find(s => s.provider === provider && s.id === m.sessionId)).length,
-          tokens: 0 // TODO: Calculate token usage per provider
-        }))
+          messages: messages.filter(m =>
+            sessions.find(s => s.provider === provider && s.id === m.sessionId)
+          ).length,
+          tokens: 0, // TODO: Calculate token usage per provider
+        })),
       };
     } catch (error) {
       console.error('Error getting metrics:', error);
@@ -526,7 +532,7 @@ export class ChatService {
         averageSessionLength: 0,
         mostUsedProvider: 'none',
         dailyUsage: [],
-        providerUsage: []
+        providerUsage: [],
       };
     }
   }

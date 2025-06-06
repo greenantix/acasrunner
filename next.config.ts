@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
 
 const nextConfig = {
   experimental: {
@@ -30,9 +31,31 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // The webpack configuration block has been removed to test Turbopack compatibility.
-  // If Webpack-specific configurations are needed when not using Turbopack,
-  // you might need to conditionally apply them based on whether Turbopack is active.
+  // Webpack configuration for handlebars
+  webpack: (config, { isServer }) => {
+    // Add a rule for handlebars files
+    config.module.rules.push({
+      test: /\.handlebars$|\.hbs$/,
+      use: [
+        {
+          loader: 'handlebars-loader',
+          options: {
+            // Suppress the warning about require.extensions
+            knownHelpers: ['layout', 'block', 'content'],
+            runtime: 'handlebars/runtime',
+          },
+        },
+      ],
+    });
+
+    // Add alias for handlebars to use runtime version
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      handlebars: 'handlebars/runtime',
+    };
+
+    return config;
+  },
 
   // Headers for security and performance
   async headers() {
@@ -93,4 +116,3 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-

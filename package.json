@@ -117,6 +117,8 @@
 		"eslint-config-prettier": "^10.1.5",
 		"eslint-plugin-unused-imports": "^4.1.4",
 		"genkit-cli": "^1.11.1",
+		"handlebars": "^4.7.8",
+		"handlebars-loader": "^1.7.3",
 		"lint-staged": "^15.2.10",
 		"patch-package": "^8.0.0",
 		"postcss": "^8.5.4",
@@ -161,4 +163,3 @@
 		"not op_mini all"
 	]
 }
-

@@ -2,14 +2,22 @@
   "version": "0.2",
   "language": "en",
   "words": [
-    "leo",
+    "collab",
+    "firestore",
     "genkit",
     "googleai",
+    "imimport",
+    "leo",
+    "leorunner",
+    "nomic",
     "nosniff",
     "placehold",
+    "predeploy",
+    "pycache",
     "turbopack",
     "Turbopack",
-    "TURBOPACK"
+    "TURBOPACK",
+    "Typesense"
   ],
   "ignorePaths": [
     "node_modules/**",

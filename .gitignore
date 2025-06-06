@@ -73,3 +73,4 @@ TYPESCRIPT_FIX_GUIDE.md
 fix-build.ps1
 *.ps1
 package-lock.json
+secret.json

@@ -125,9 +125,9 @@ class LeoGatekeeperService:
         if self.session:
             await self.session.close()
 
-# Usage functions for ACAS workflow
+# Usage functions for leo workflow
 async def process_operation_request(operation_type: str, details: Dict, leo_service: LeoGatekeeperService) -> Dict:
-    """Main ACAS operation processing with LEO gatekeeper"""
+    """Main leo operation processing with LEO gatekeeper"""
     
     # Format context for LEO
     context = f"""

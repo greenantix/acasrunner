@@ -110,7 +110,7 @@ class NomicEmbeddingService:
         if self.session:
             await self.session.close()
 
-# Usage for ACAS code indexing
+# Usage for leo code indexing
 embedding_service = NomicEmbeddingService()
 
 async def index_code_file(file_path: str, content: str, language: str) -> bool:

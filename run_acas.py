@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-ACAS Backend Startup Script
+leo Backend Startup Script
 
-This script initializes and runs the ACAS (AI Coding Assistant System) backend.
+This script initializes and runs the leo (AI Coding Assistant System) backend.
 It performs system checks, validates configuration, and starts the FastAPI server.
 """
 
@@ -130,7 +130,7 @@ def print_startup_banner():
     banner = """
     ╔═══════════════════════════════════════════════════════════════╗
     ║                                                               ║
-    ║     🤖 ACAS - AI Coding Assistant System                     ║
+    ║     🤖 leo - AI Coding Assistant System                     ║
     ║                                                               ║
     ║     Local AI + Cloud Collaboration Platform                   ║
     ║                                                               ║
@@ -152,9 +152,9 @@ def print_system_status(
     print(f"   External Services: {'✅ Available' if services_ok else '⚠️  Partial'}")
     
     if not all([config_valid, db_ok, firebase_ok]):
-        print("\n⚠️  Some services are not available. ACAS may have limited functionality.")
+        print("\n⚠️  Some services are not available. leo may have limited functionality.")
     else:
-        print("\n🚀 All systems ready! ACAS is fully operational.")
+        print("\n🚀 All systems ready! leo is fully operational.")
 
 def main():
     """Main startup function"""
@@ -165,7 +165,7 @@ def main():
     setup_logging(settings.log_level)
     logger = get_logger("startup")
     
-    logger.info("Starting ACAS Backend...")
+    logger.info("Starting leo Backend...")
     
     # Check system requirements
     system_issues = check_system_requirements()
@@ -201,7 +201,7 @@ def main():
     
     # Log startup event
     log_service_event(
-        service="acas-backend",
+        service="leo-backend",
         event="startup",
         success=True,
         config_valid=config_valid,
@@ -231,8 +231,8 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n👋 ACAS Backend stopped by user")
+        print("\n👋 leo Backend stopped by user")
         sys.exit(0)
     except Exception as e:
-        print(f"\n💥 Failed to start ACAS Backend: {e}")
+        print(f"\n💥 Failed to start leo Backend: {e}")
         sys.exit(1)

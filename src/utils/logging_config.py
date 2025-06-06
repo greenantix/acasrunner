@@ -33,16 +33,16 @@ class JSONFormatter(logging.Formatter):
         
         return json.dumps(log_data, default=str)
 
-class ACASLoggerAdapter(logging.LoggerAdapter):
-    """Logger adapter for ACAS-specific context"""
+class leoLoggerAdapter(logging.LoggerAdapter):
+    """Logger adapter for leo-specific context"""
     
     def process(self, msg, kwargs):
         """Add context to log messages"""
         extra = kwargs.get('extra', {})
         
-        # Add default ACAS context
+        # Add default leo context
         extra.update({
-            'service': 'acas-backend',
+            'service': 'leo-backend',
             'version': '1.0.0',
             **self.extra
         })
@@ -55,7 +55,7 @@ def setup_logging(
     json_format: bool = False,
     log_file: str = None
 ) -> None:
-    """Setup logging configuration for ACAS"""
+    """Setup logging configuration for leo"""
     
     # Clear any existing handlers
     root_logger = logging.getLogger()
@@ -89,14 +89,14 @@ def setup_logging(
     logging.getLogger("firebase_admin").setLevel(logging.WARNING)
     logging.getLogger("aiohttp").setLevel(logging.WARNING)
     
-    # Create ACAS-specific loggers
-    acas_logger = logging.getLogger("acas")
-    acas_logger.setLevel(log_level)
+    # Create leo-specific loggers
+    leo_logger = logging.getLogger("leo")
+    leo_logger.setLevel(log_level)
 
-def get_logger(name: str, **context) -> ACASLoggerAdapter:
-    """Get a logger with ACAS context"""
-    logger = logging.getLogger(f"acas.{name}")
-    return ACASLoggerAdapter(logger, context)
+def get_logger(name: str, **context) -> leoLoggerAdapter:
+    """Get a logger with leo context"""
+    logger = logging.getLogger(f"leo.{name}")
+    return leoLoggerAdapter(logger, context)
 
 def log_api_request(
     endpoint: str,

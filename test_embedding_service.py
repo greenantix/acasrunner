@@ -95,7 +95,7 @@ async def test_connection():
         await embedding_service.close()
 
 if __name__ == "__main__":
-    print("🚀 ACAS Embedding Service Test Suite")
+    print("🚀 leo Embedding Service Test Suite")
     print("=" * 50)
     
     # Run connection test first
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         test_success = asyncio.run(test_embedding_service())
         
         if test_success:
-            print("\n🎯 Ready to integrate with ACAS!")
+            print("\n🎯 Ready to integrate with leo!")
             print("💡 Next: Set up SQLite-vec database")
         else:
             print("\n🔧 Fix the issues above before proceeding")

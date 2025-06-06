@@ -1,6 +1,13 @@
-import { initializeApp, getApps, cert, ServiceAccount } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { App, cert, getApps, initializeApp } from 'firebase-admin/app';
+import { Auth, getAuth } from 'firebase-admin/auth';
+import {
+  DocumentData,
+  FieldValue,
+  Firestore,
+  getFirestore,
+  QueryDocumentSnapshot,
+  Timestamp,
+} from 'firebase-admin/firestore';
 import { NextRequest } from 'next/server';
 
 interface FirebaseAdminConfig {
@@ -14,11 +21,37 @@ interface FirebaseAdminConfig {
   authProviderX509CertUrl: string;
 }
 
+interface ProjectSettings {
+  autoIndex: boolean;
+  filePatterns: string[];
+  excludePatterns: string[];
+  embeddingModel: string;
+}
+
+interface ProjectIndexingStatus {
+  totalFiles: number;
+  indexedFiles: number;
+  lastIndexed: Date | Timestamp | null;
+  status: string;
+}
+
+export interface Project {
+  projectId: string;
+  name: string;
+  description: string;
+  ownerUid: string;
+  createdAt: Date | Timestamp;
+  updatedAt: Date | Timestamp;
+  collaborators: { [uid: string]: 'owner' | 'editor' | 'viewer' | string };
+  settings: ProjectSettings;
+  indexingStatus: ProjectIndexingStatus;
+}
+
 class FirebaseAdminService {
   private static instance: FirebaseAdminService;
-  private app: any;
-  private auth: any;
-  private db: any;
+  private app!: App; // Definite assignment assertion
+  private auth!: Auth; // Definite assignment assertion
+  private db!: Firestore; // Definite assignment assertion
 
   private constructor() {
     this.initializeFirebase();
@@ -33,7 +66,32 @@ class FirebaseAdminService {
 
   private initializeFirebase() {
     if (getApps().length === 0) {
-      const serviceAccount: ServiceAccount = {
+      const {
+        FIREBASE_PROJECT_ID,
+        FIREBASE_PRIVATE_KEY_ID,
+        FIREBASE_PRIVATE_KEY,
+        FIREBASE_CLIENT_EMAIL,
+        FIREBASE_CLIENT_ID,
+        FIREBASE_AUTH_URI,
+        FIREBASE_TOKEN_URI,
+        FIREBASE_CERT_URL,
+      } = process.env;
+
+      // 🔒 Safety check
+      if (
+        !FIREBASE_PROJECT_ID ||
+        !FIREBASE_PRIVATE_KEY_ID ||
+        !FIREBASE_PRIVATE_KEY ||
+        !FIREBASE_CLIENT_EMAIL ||
+        !FIREBASE_CLIENT_ID ||
+        !FIREBASE_AUTH_URI ||
+        !FIREBASE_TOKEN_URI ||
+        !FIREBASE_CERT_URL
+      ) {
+        throw new Error('Missing required Firebase environment variables!');
+      }
+
+      const serviceAccount = {
         type: 'service_account',
         projectId: process.env.FIREBASE_PROJECT_ID!,
         privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID!,
@@ -47,7 +105,7 @@ class FirebaseAdminService {
 
       this.app = initializeApp({
         credential: cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID,
+        projectId: FIREBASE_PROJECT_ID,
       });
     } else {
       this.app = getApps()[0];
@@ -130,7 +188,10 @@ class FirebaseAdminService {
       return { projectId: projectRef.id, success: true };
     } catch (error) {
       console.error('Error creating project:', error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error creating project',
+      };
     }
   }
 
@@ -139,22 +200,22 @@ class FirebaseAdminService {
       // Get projects where user is owner
       const ownerQuery = this.db.collection('projects').where('ownerUid', '==', uid);
       const ownerSnapshot = await ownerQuery.get();
-      
+
       // Get projects where user is collaborator
       const collabQuery = this.db.collection('projects').where(`collaborators.${uid}`, '>', '');
       const collabSnapshot = await collabQuery.get();
 
-      const projects: any[] = [];
-      const projectIds = new Set();
+      const projects: Array<{ id: string } & Project> = [];
+      const projectIds = new Set<string>();
 
-      ownerSnapshot.forEach((doc) => {
-        projects.push({ id: doc.id, ...doc.data() });
+      ownerSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+        projects.push({ id: doc.id, ...(doc.data() as Project) });
         projectIds.add(doc.id);
       });
 
-      collabSnapshot.forEach((doc) => {
+      collabSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
         if (!projectIds.has(doc.id)) {
-          projects.push({ id: doc.id, ...doc.data() });
+          projects.push({ id: doc.id, ...(doc.data() as Project) });
         }
       });
 
@@ -186,8 +247,8 @@ class FirebaseAdminService {
     try {
       const projectRef = this.db.collection('projects').doc(projectId);
       await projectRef.update({
-        'indexingStatus': status,
-        'updatedAt': new Date(),
+        indexingStatus: status,
+        updatedAt: new Date(),
       });
       return true;
     } catch (error) {
@@ -196,12 +257,17 @@ class FirebaseAdminService {
     }
   }
 
-  async recordSearchActivity(uid: string, projectId: string, queryHash: string, resultsCount: number) {
+  async recordSearchActivity(
+    uid: string,
+    projectId: string,
+    queryHash: string,
+    resultsCount: number
+  ) {
     try {
       // Update user stats
       const userRef = this.db.collection('users').doc(uid);
       await userRef.update({
-        'usageStats.totalSearches': this.db.FieldValue.increment(1),
+        'usageStats.totalSearches': FieldValue.increment(1),
         'usageStats.lastActivity': new Date(),
       });
 
@@ -222,11 +288,11 @@ class FirebaseAdminService {
     }
   }
 
-  getFirestore() {
+  getFirestore(): Firestore {
     return this.db;
   }
 
-  getAuth() {
+  getAuth(): Auth {
     return this.auth;
   }
 }

@@ -1,4 +1,4 @@
-# test_acas_system.py
+# test_leo_system.py
 import asyncio
 import sys
 import os
@@ -6,9 +6,9 @@ import os
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-async def test_acas_system():
-    """Test the complete ACAS system"""
-    print("🧪 Testing ACAS System Components...")
+async def test_leo_system():
+    """Test the complete leo system"""
+    print("🧪 Testing leo System Components...")
     print("=" * 50)
     
     try:
@@ -44,7 +44,7 @@ async def test_acas_system():
         else:
             print("❌ LEO service failed")
         
-        print("\n🎉 ACAS System Ready!")
+        print("\n🎉 leo System Ready!")
         print("💡 You can now run: python -m src.main")
         
         await embedding_service.close()
@@ -56,4 +56,4 @@ async def test_acas_system():
         return False
 
 if __name__ == "__main__":
-    asyncio.run(test_acas_system())
+    asyncio.run(test_leo_system())

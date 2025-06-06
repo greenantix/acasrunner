@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
     global firebase_service, vector_service, leo_service, embedding_service
     
     # Startup
-    logger.info("🚀 Starting ACAS services...")
+    logger.info("🚀 Starting leo services...")
     
     try:
         firebase_service = FirebaseService()
@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    logger.info("🛑 Shutting down ACAS services...")
+    logger.info("🛑 Shutting down leo services...")
     if leo_service:
         await leo_service.close()
     if embedding_service:
@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="ACAS - AI Coding Assistant System",
+    title="leo - AI Coding Assistant System",
     description="Local AI coding assistant with cloud collaboration",
     version="1.0.0",
     lifespan=lifespan
@@ -147,7 +147,7 @@ async def require_verified_email(user = Depends(get_current_user)):
 # Root and health endpoints
 @app.get("/")
 async def root():
-    return {"message": "ACAS AI Coding Assistant System", "status": "operational"}
+    return {"message": "leo AI Coding Assistant System", "status": "operational"}
 
 @app.get("/health")
 async def health_check():

@@ -1,7 +1,7 @@
 @echo off
-REM ACAS Runner VS Code Extension Setup Script for Windows
+REM leo Runner VS Code Extension Setup Script for Windows
 
-echo 🚀 Setting up ACAS Runner VS Code Extension...
+echo 🚀 Setting up leo Runner VS Code Extension...
 
 REM Check if we're in the right directory
 if not exist "package.json" (
@@ -79,13 +79,13 @@ if errorlevel 1 (
 )
 
 echo.
-echo ✅ ACAS Runner VS Code Extension installed successfully!
+echo ✅ leo Runner VS Code Extension installed successfully!
 echo.
 echo 🔧 Next steps:
 echo 1. Open VS Code
-echo 2. Press Ctrl+Shift+P and search for 'ACAS'
-echo 3. Run 'ACAS: Connect to ACAS Runner'
-echo 4. Configure settings in VS Code preferences (search for 'ACAS')
+echo 2. Press Ctrl+Shift+P and search for 'leo'
+echo 3. Run 'leo: Connect to leo Runner'
+echo 4. Configure settings in VS Code preferences (search for 'leo')
 echo.
 echo 📚 For more information, see the README.md file
 echo.

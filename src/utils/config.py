@@ -149,7 +149,7 @@ def setup_logging(settings: Settings):
         handlers=[
             logging.StreamHandler(),
             # Add file handler for production
-            *([logging.FileHandler("acas.log")] if not settings.debug else [])
+            *([logging.FileHandler("leo.log")] if not settings.debug else [])
         ]
     )
     

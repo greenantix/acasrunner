@@ -139,8 +139,8 @@
     --sidebar-ring: 270 60% 55%;
   }
 
-  /* ACAS Runner Theme */
-  .theme-acas-runner {
+  /* leo Runner Theme */
+  .theme-leo-runner {
     --background: 220 15% 12%; /* Dark Slate Grey */
     --foreground: 210 30% 92%; /* Light Grey/Off-white */
     --card: 220 15% 10%; /* Slightly darker card */
@@ -161,7 +161,7 @@
     --input: 220 15% 22%;
     --ring: 28 85% 50%; /* Ring based on primary orange */
 
-    /* Sidebar for ACAS Runner theme */
+    /* Sidebar for leo Runner theme */
     --sidebar-background: 220 15% 8%; /* Even darker for sidebar */
     --sidebar-foreground: 210 30% 88%;
     --sidebar-primary: 28 90% 55%; /* Orange for active/hovered sidebar items */
