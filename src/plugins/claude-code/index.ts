@@ -3,6 +3,7 @@ import { ClaudeCodeProcessDetector } from './process-detector';
 import { ClaudeCodeFileMonitor } from './file-monitor';
 import { ClaudeCodeEscalationHandler } from './escalation-handler';
 import { ClaudeCodeHistoryManager } from './history-manager';
+import { StruggleManager } from './struggle-settings';
 
 export class ClaudeCodePlugin implements Plugin {
   id = 'claude-code';
@@ -47,13 +48,15 @@ export class ClaudeCodePlugin implements Plugin {
   private fileMonitor: ClaudeCodeFileMonitor;
   private escalationHandler: ClaudeCodeEscalationHandler;
   private historyManager: ClaudeCodeHistoryManager;
+  private struggleManager: StruggleManager;
   private isActive = false;
   private api?: PluginAPI;
 
   constructor() {
+    this.struggleManager = new StruggleManager();
     this.processDetector = new ClaudeCodeProcessDetector();
     this.fileMonitor = new ClaudeCodeFileMonitor();
-    this.escalationHandler = new ClaudeCodeEscalationHandler();
+    this.escalationHandler = new ClaudeCodeEscalationHandler(this.struggleManager);
     this.historyManager = new ClaudeCodeHistoryManager();
   }
 
@@ -81,6 +84,7 @@ export class ClaudeCodePlugin implements Plugin {
   async initialize(): Promise<void> {
     console.log('[Claude Code Plugin] Initializing...');
     
+    await this.struggleManager.initialize();
     await this.processDetector.initialize();
     await this.fileMonitor.initialize();
     await this.escalationHandler.initialize();
@@ -89,7 +93,7 @@ export class ClaudeCodePlugin implements Plugin {
     this.setupEventHandlers();
     this.isActive = true;
     
-    console.log('[Claude Code Plugin] Initialized successfully');
+    console.log('[Claude Code Plugin] Initialized successfully with anti-bloat struggle settings');
   }
 
   async cleanup(): Promise<void> {
@@ -101,6 +105,7 @@ export class ClaudeCodePlugin implements Plugin {
     await this.fileMonitor.cleanup();
     await this.escalationHandler.cleanup();
     await this.historyManager.cleanup();
+    await this.struggleManager.cleanup();
     
     console.log('[Claude Code Plugin] Cleaned up successfully');
   }
@@ -144,11 +149,24 @@ export class ClaudeCodePlugin implements Plugin {
     }
   }
 
-  async onError(error: any): Promise<void> {
+  async onError(error: any, userId?: string): Promise<void> {
     if (!this.isActive) return;
 
     try {
-      const pattern = await this.escalationHandler.analyzeError(error);
+      // Get userId from API context if not provided
+      const currentUserId = userId || this.api?.auth?.userId || 'anonymous';
+      
+      const pattern = await this.escalationHandler.analyzeError(error, currentUserId);
+      
+      // Log struggle action if present
+      if (pattern.struggleAction) {
+        console.log(`[Claude Code Plugin] Struggle action: ${pattern.struggleAction.action} - ${pattern.struggleAction.reason}`);
+        
+        // Notify user if struggle was auto-disabled
+        if (pattern.struggleAction.shouldNotifyUser) {
+          console.log(`[Claude Code Plugin] 🛡️ Auto-disabled repeated issue: ${pattern.type}`);
+        }
+      }
       
       if (pattern.shouldEscalate) {
         console.log(`[Claude Code Plugin] Escalating error: ${pattern.severity}`);
@@ -162,6 +180,8 @@ export class ClaudeCodePlugin implements Plugin {
             plugin: 'claude-code'
           });
         }
+      } else if (pattern.struggleAction?.action === 'ignore' || pattern.struggleAction?.action === 'auto_disabled') {
+        console.log(`[Claude Code Plugin] 🚫 Skipped escalation due to struggle settings: ${pattern.type}`);
       }
     } catch (escalationError) {
       console.error('[Claude Code Plugin] Error during error escalation:', escalationError);
@@ -286,15 +306,68 @@ export class ClaudeCodePlugin implements Plugin {
     }
   }
 
-  async getStatus(): Promise<{ active: boolean; stats: any }> {
+  async getStatus(userId?: string): Promise<{ active: boolean; stats: any }> {
+    const baseStats = {
+      activeSessions: await this.historyManager.getActiveSessionCount(),
+      totalEvents: await this.historyManager.getTotalEventCount(),
+      lastActivity: await this.historyManager.getLastActivityTime()
+    };
+
+    // Add struggle statistics if userId is provided
+    if (userId) {
+      try {
+        const struggleStats = await this.struggleManager.getUserStruggleStats(userId);
+        baseStats.struggles = struggleStats;
+      } catch (error) {
+        console.error('[Claude Code Plugin] Error getting struggle stats:', error);
+      }
+    }
+
     return {
       active: this.isActive,
-      stats: {
-        activeSessions: await this.historyManager.getActiveSessionCount(),
-        totalEvents: await this.historyManager.getTotalEventCount(),
-        lastActivity: await this.historyManager.getLastActivityTime()
-      }
+      stats: baseStats
     };
+  }
+
+  // Public API for struggle management
+  async getStruggleSettings(userId: string): Promise<any> {
+    try {
+      return await this.struggleManager.loadSettings(userId);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error loading struggle settings:', error);
+      throw error;
+    }
+  }
+
+  async exportStruggleSettings(userId: string): Promise<string> {
+    try {
+      return await this.struggleManager.exportSettings(userId);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error exporting struggle settings:', error);
+      throw error;
+    }
+  }
+
+  async importStruggleSettings(userId: string, settingsJson: string): Promise<boolean> {
+    try {
+      return await this.struggleManager.importSettings(userId, settingsJson);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error importing struggle settings:', error);
+      return false;
+    }
+  }
+
+  async resetUserStruggles(userId: string): Promise<void> {
+    try {
+      await this.struggleManager.resetUserStruggles(userId);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error resetting user struggles:', error);
+      throw error;
+    }
+  }
+
+  getAvailableStruggleTypes() {
+    return this.struggleManager.getStruggleTypes();
   }
 }
 

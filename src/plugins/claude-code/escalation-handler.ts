@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { StruggleManager, StruggleAction } from './struggle-settings';
 
 export interface ErrorPattern {
   type: string;
@@ -7,6 +8,7 @@ export interface ErrorPattern {
   confidence: number;
   pattern: string;
   description: string;
+  struggleAction?: StruggleAction;
 }
 
 export interface EscalationConfig {
@@ -23,9 +25,11 @@ export class ClaudeCodeEscalationHandler extends EventEmitter {
   private errorPatterns: Map<string, RegExp> = new Map();
   private escalationConfig: EscalationConfig;
   private isActive = false;
+  private struggleManager: StruggleManager;
 
-  constructor() {
+  constructor(struggleManager?: StruggleManager) {
     super();
+    this.struggleManager = struggleManager || new StruggleManager();
     this.escalationConfig = {
       plugin_specific: ['claude-code'],
       model_preferences: {
@@ -42,11 +46,13 @@ export class ClaudeCodeEscalationHandler extends EventEmitter {
   async initialize(): Promise<void> {
     console.log('[Escalation Handler] Initializing error pattern detection...');
     this.isActive = true;
+    await this.struggleManager.initialize();
   }
 
   async cleanup(): Promise<void> {
     console.log('[Escalation Handler] Cleaning up escalation handler...');
     this.isActive = false;
+    await this.struggleManager.cleanup();
   }
 
   private initializeErrorPatterns(): void {
@@ -78,7 +84,7 @@ export class ClaudeCodeEscalationHandler extends EventEmitter {
     this.errorPatterns.set('type-error', /type.*error|typescript.*error|cannot.*read.*property/i);
   }
 
-  async analyzeError(errorData: any): Promise<ErrorPattern> {
+  async analyzeError(errorData: any, userId?: string): Promise<ErrorPattern> {
     if (!this.isActive) {
       return this.createDefaultPattern();
     }
@@ -86,13 +92,42 @@ export class ClaudeCodeEscalationHandler extends EventEmitter {
     const errorMessage = this.extractErrorMessage(errorData);
     const detectedPattern = this.detectErrorPattern(errorMessage);
     
+    // Consult struggle settings first (anti-bloat filter)
+    let struggleAction: StruggleAction | undefined;
+    let shouldEscalate = this.shouldEscalate(detectedPattern);
+
+    if (userId) {
+      try {
+        // Check if this issue type should be ignored
+        const shouldIgnore = await this.struggleManager.shouldIgnoreIssue(userId, detectedPattern.type);
+        
+        if (shouldIgnore) {
+          console.log(`[Escalation Handler] Ignoring issue type "${detectedPattern.type}" due to struggle settings`);
+          shouldEscalate = false;
+        } else {
+          // Record the struggle and get action recommendation
+          struggleAction = await this.struggleManager.recordStruggle(userId, detectedPattern.type);
+          
+          // Update escalation decision based on struggle action
+          if (struggleAction.action === 'ignore' || struggleAction.action === 'auto_disabled') {
+            shouldEscalate = false;
+            console.log(`[Escalation Handler] ${struggleAction.reason}`);
+          }
+        }
+      } catch (error) {
+        console.error('[Escalation Handler] Error consulting struggle settings:', error);
+        // Continue with original escalation logic if struggle manager fails
+      }
+    }
+    
     return {
       type: detectedPattern.type,
       severity: detectedPattern.severity,
-      shouldEscalate: this.shouldEscalate(detectedPattern),
+      shouldEscalate,
       confidence: detectedPattern.confidence,
       pattern: detectedPattern.pattern,
-      description: this.getErrorDescription(detectedPattern.type)
+      description: this.getErrorDescription(detectedPattern.type),
+      struggleAction
     };
   }
 
