@@ -4,6 +4,7 @@ import { ClaudeCodeFileMonitor } from './file-monitor';
 import { ClaudeCodeEscalationHandler } from './escalation-handler';
 import { ClaudeCodeHistoryManager } from './history-manager';
 import { StruggleManager } from './struggle-settings';
+import { ClaudeCodeMonitor, TaskRequest, TaskVerification } from './monitor';
 
 export class ClaudeCodePlugin implements Plugin {
   id = 'claude-code';
@@ -49,6 +50,7 @@ export class ClaudeCodePlugin implements Plugin {
   private escalationHandler: ClaudeCodeEscalationHandler;
   private historyManager: ClaudeCodeHistoryManager;
   private struggleManager: StruggleManager;
+  private taskMonitor: ClaudeCodeMonitor;
   private isActive = false;
   private api?: PluginAPI;
 
@@ -58,6 +60,7 @@ export class ClaudeCodePlugin implements Plugin {
     this.fileMonitor = new ClaudeCodeFileMonitor();
     this.escalationHandler = new ClaudeCodeEscalationHandler(this.struggleManager);
     this.historyManager = new ClaudeCodeHistoryManager();
+    this.taskMonitor = new ClaudeCodeMonitor();
   }
 
   async onLoad(api: PluginAPI): Promise<void> {
@@ -89,11 +92,12 @@ export class ClaudeCodePlugin implements Plugin {
     await this.fileMonitor.initialize();
     await this.escalationHandler.initialize();
     await this.historyManager.initialize();
+    await this.taskMonitor.initialize();
 
     this.setupEventHandlers();
     this.isActive = true;
     
-    console.log('[Claude Code Plugin] Initialized successfully with anti-bloat struggle settings');
+    console.log('[Claude Code Plugin] Initialized successfully with task verification and anti-bloat struggle settings');
   }
 
   async cleanup(): Promise<void> {
@@ -106,6 +110,7 @@ export class ClaudeCodePlugin implements Plugin {
     await this.escalationHandler.cleanup();
     await this.historyManager.cleanup();
     await this.struggleManager.cleanup();
+    await this.taskMonitor.cleanup();
     
     console.log('[Claude Code Plugin] Cleaned up successfully');
   }
@@ -251,6 +256,43 @@ export class ClaudeCodePlugin implements Plugin {
       };
       this.onActivity(activityEvent);
     });
+
+    // Task Monitor event handlers
+    this.taskMonitor.on('task-verification-complete', (verification: TaskVerification) => {
+      const activityEvent: ActivityEvent = {
+        id: `task-verification-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'plugin_event',
+        source: 'claude-code-plugin',
+        message: `Task verification ${verification.actuallyCompleted ? 'PASSED' : 'FAILED'}: ${verification.taskId}`,
+        details: {
+          severity: verification.actuallyCompleted ? 'low' : 'medium'
+        },
+        metadata: { verification }
+      };
+      this.onActivity(activityEvent);
+
+      // Handle escalation based on verification result
+      if (!verification.actuallyCompleted) {
+        this.handleTaskFailure(verification);
+      }
+    });
+
+    this.taskMonitor.on('task-timeout', (verification: TaskVerification) => {
+      const activityEvent: ActivityEvent = {
+        id: `task-timeout-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'error',
+        source: 'claude-code-plugin',
+        message: `Task timed out: ${verification.taskId}`,
+        details: {
+          severity: 'high'
+        },
+        metadata: { verification }
+      };
+      this.onActivity(activityEvent);
+      this.handleTaskFailure(verification);
+    });
   }
 
   private async handleProcessEvent(event: ActivityEvent): Promise<void> {
@@ -306,29 +348,6 @@ export class ClaudeCodePlugin implements Plugin {
     }
   }
 
-  async getStatus(userId?: string): Promise<{ active: boolean; stats: any }> {
-    const baseStats = {
-      activeSessions: await this.historyManager.getActiveSessionCount(),
-      totalEvents: await this.historyManager.getTotalEventCount(),
-      lastActivity: await this.historyManager.getLastActivityTime()
-    };
-
-    // Add struggle statistics if userId is provided
-    if (userId) {
-      try {
-        const struggleStats = await this.struggleManager.getUserStruggleStats(userId);
-        baseStats.struggles = struggleStats;
-      } catch (error) {
-        console.error('[Claude Code Plugin] Error getting struggle stats:', error);
-      }
-    }
-
-    return {
-      active: this.isActive,
-      stats: baseStats
-    };
-  }
-
   // Public API for struggle management
   async getStruggleSettings(userId: string): Promise<any> {
     try {
@@ -368,6 +387,127 @@ export class ClaudeCodePlugin implements Plugin {
 
   getAvailableStruggleTypes() {
     return this.struggleManager.getStruggleTypes();
+  }
+
+  // Task failure handling with escalation
+  private async handleTaskFailure(verification: TaskVerification): Promise<void> {
+    try {
+      console.log(`[Claude Code Plugin] Handling task failure: ${verification.taskId} (${verification.escalationPath})`);
+
+      // Create escalation event based on verification result
+      if (this.api) {
+        await this.api.escalation.trigger({
+          type: 'task-verification-failure',
+          severity: verification.confidence < 0.3 ? 'high' : 'medium',
+          message: `Task verification failed for ${verification.taskId}. Expected: [${verification.expectedOutputs.join(', ')}], Found: [${verification.actualOutputs.join(', ')}]`,
+          context: {
+            verification,
+            escalationPath: verification.escalationPath,
+            confidence: verification.confidence,
+            stopReason: verification.stopReason
+          },
+          plugin: 'claude-code'
+        });
+      }
+
+      // Take action based on escalation path
+      switch (verification.escalationPath) {
+        case 'claude_message':
+          console.log(`[Claude Code Plugin] 💬 Immediate Claude escalation for task: ${verification.taskId}`);
+          break;
+        case 'queue_retry':
+          console.log(`[Claude Code Plugin] 🔄 Queuing retry for task: ${verification.taskId}`);
+          break;
+        case 'user_notify':
+          console.log(`[Claude Code Plugin] 🔔 User notification required for task: ${verification.taskId}`);
+          break;
+      }
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error handling task failure:', error);
+    }
+  }
+
+  // Public API for task management
+  async startTaskTracking(task: TaskRequest): Promise<void> {
+    try {
+      await this.taskMonitor.startTaskTracking(task);
+      console.log(`[Claude Code Plugin] ✅ Started tracking task: ${task.id}`);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error starting task tracking:', error);
+      throw error;
+    }
+  }
+
+  async stopTaskTracking(taskId: string): Promise<TaskVerification | null> {
+    try {
+      const verification = await this.taskMonitor.stopTaskTracking(taskId);
+      console.log(`[Claude Code Plugin] ⏹️ Stopped tracking task: ${taskId}`);
+      return verification;
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error stopping task tracking:', error);
+      throw error;
+    }
+  }
+
+  async verifyTaskCompletion(task: TaskRequest): Promise<TaskVerification> {
+    try {
+      return await this.taskMonitor.verifyTaskCompletion(task);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error verifying task completion:', error);
+      throw error;
+    }
+  }
+
+  getActiveVerifications(): Map<string, TaskRequest> {
+    return this.taskMonitor.getActiveVerifications();
+  }
+
+  getVerificationHistory(): Map<string, TaskVerification> {
+    return this.taskMonitor.getVerificationHistory();
+  }
+
+  async getVerificationStats(): Promise<{
+    total: number;
+    completed: number;
+    failed: number;
+    successRate: number;
+  }> {
+    return await this.taskMonitor.getVerificationStats();
+  }
+
+  async detectClaudeCodeProcesses(): Promise<any[]> {
+    try {
+      return await this.taskMonitor.detectClaudeCodeProcess();
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error detecting Claude Code processes:', error);
+      return [];
+    }
+  }
+
+  // Enhanced status with task verification stats
+  async getStatus(userId?: string): Promise<{ active: boolean; stats: any }> {
+    const baseStats = {
+      activeSessions: await this.historyManager.getActiveSessionCount(),
+      totalEvents: await this.historyManager.getTotalEventCount(),
+      lastActivity: await this.historyManager.getLastActivityTime(),
+      taskVerification: await this.getVerificationStats(),
+      activeTaskVerifications: this.getActiveVerifications().size
+    };
+
+    // Add struggle statistics if userId is provided
+    if (userId) {
+      try {
+        const struggleStats = await this.struggleManager.getUserStruggleStats(userId);
+        baseStats.struggles = struggleStats;
+      } catch (error) {
+        console.error('[Claude Code Plugin] Error getting struggle stats:', error);
+      }
+    }
+
+    return {
+      active: this.isActive,
+      stats: baseStats
+    };
   }
 }
 
