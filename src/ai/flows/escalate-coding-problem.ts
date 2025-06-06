@@ -21,7 +21,7 @@ const EscalateCodingProblemOutputSchema = z.object({
     .string()
     .describe('A detailed explanation of the likely cause of the error.'),
   severity: z.enum(["low", "medium", "high"]).describe("The AI's assessment of the error's severity."),
-  trace: z.array(z.string()).describe("Mocked execution trace of the AI's reasoning process. For future LLM Chain Visibility."),
+  trace: z.array(z.string()).describe("Execution trace of the AI's reasoning process for LLM Chain Visibility."),
 });
 export type EscalateCodingProblemOutput = z.infer<typeof EscalateCodingProblemOutputSchema>;
 
@@ -41,7 +41,7 @@ Analyze the error and context, then provide a detailed explanation of the likely
 Error: {{{error}}}
 Context: {{{context}}}
 
-Based on the information provided, provide an explanation, severity, and a mock trace.
+Based on the information provided, provide an explanation, severity, and a reasoning trace.
 The trace should be a list of high-level steps you took, e.g., ["Analyzed error message", "Cross-referenced with common JavaScript errors", "Formulated explanation"].
 `,
 });

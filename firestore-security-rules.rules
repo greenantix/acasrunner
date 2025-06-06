@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Projects: owners have full access, collaborators have limited access
+    match /projects/{projectId} {
+      allow read: if request.auth != null && 
+        (resource.data.ownerUid == request.auth.uid ||
+         request.auth.uid in resource.data.collaborators);
+      
+      allow create: if request.auth != null && 
+        request.auth.uid == resource.data.ownerUid;
+      
+      allow update: if request.auth != null && 
+        (resource.data.ownerUid == request.auth.uid ||
+         (request.auth.uid in resource.data.collaborators && 
+          resource.data.collaborators[request.auth.uid] in ['owner', 'editor']));
+      
+      allow delete: if request.auth != null && 
+        resource.data.ownerUid == request.auth.uid;
+    }
+    
+    // Sessions: users can only access their own sessions
+    match /sessions/{sessionId} {
+      allow read, write: if request.auth != null && 
+        resource.data.userUid == request.auth.uid;
+    }
+    
+    // Struggles: users can read their own and their project collaborators'
+    match /struggles/{struggleId} {
+      allow read: if request.auth != null && 
+        (resource.data.userUid == request.auth.uid ||
+         exists(/databases/$(database)/documents/projects/$(resource.data.projectId)) &&
+         request.auth.uid in get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.collaborators);
+      
+      allow write: if request.auth != null && 
+        resource.data.userUid == request.auth.uid;
+    }
+    
+    // Search events: users can only access their own
+    match /searchEvents/{eventId} {
+      allow read, write: if request.auth != null && 
+        resource.data.userUid == request.auth.uid;
+    }
+    
+    // Error logs: only authenticated users can write, admins can read
+    match /errorLogs/{logId} {
+      allow write: if request.auth != null;
+      allow read: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+  }
+}
