@@ -5,6 +5,8 @@ import { ClaudeCodeEscalationHandler } from './escalation-handler';
 import { ClaudeCodeHistoryManager } from './history-manager';
 import { StruggleManager } from './struggle-settings';
 import { ClaudeCodeMonitor, TaskRequest, TaskVerification } from './monitor';
+import { WSLOptimizer, SystemInfo, WSLPathMapping, TurboPromptEnhancement } from './wsl-optimizer';
+import { DriftDetector, ImportViolation, DriftAction, HealthReport, FixRecommendation, PackageJson } from './drift-detector';
 
 export class ClaudeCodePlugin implements Plugin {
   id = 'claude-code';
@@ -51,6 +53,8 @@ export class ClaudeCodePlugin implements Plugin {
   private historyManager: ClaudeCodeHistoryManager;
   private struggleManager: StruggleManager;
   private taskMonitor: ClaudeCodeMonitor;
+  private wslOptimizer: WSLOptimizer;
+  private driftDetector: DriftDetector;
   private isActive = false;
   private api?: PluginAPI;
 
@@ -61,6 +65,8 @@ export class ClaudeCodePlugin implements Plugin {
     this.escalationHandler = new ClaudeCodeEscalationHandler(this.struggleManager);
     this.historyManager = new ClaudeCodeHistoryManager();
     this.taskMonitor = new ClaudeCodeMonitor();
+    this.wslOptimizer = new WSLOptimizer();
+    this.driftDetector = new DriftDetector();
   }
 
   async onLoad(api: PluginAPI): Promise<void> {
@@ -93,11 +99,15 @@ export class ClaudeCodePlugin implements Plugin {
     await this.escalationHandler.initialize();
     await this.historyManager.initialize();
     await this.taskMonitor.initialize();
+    await this.wslOptimizer.initialize();
+    await this.driftDetector.initialize();
 
     this.setupEventHandlers();
     this.isActive = true;
     
-    console.log('[Claude Code Plugin] Initialized successfully with task verification and anti-bloat struggle settings');
+    const systemInfo = this.wslOptimizer.getSystemInfo();
+    const envType = systemInfo?.isWSL ? `WSL (${systemInfo.wslDistro})` : 'Native Linux';
+    console.log(`[Claude Code Plugin] ✅ Initialized successfully with task verification, struggle settings, drift detection, and system optimization for ${envType}`);
   }
 
   async cleanup(): Promise<void> {
@@ -111,6 +121,8 @@ export class ClaudeCodePlugin implements Plugin {
     await this.historyManager.cleanup();
     await this.struggleManager.cleanup();
     await this.taskMonitor.cleanup();
+    await this.wslOptimizer.cleanup();
+    await this.driftDetector.cleanup();
     
     console.log('[Claude Code Plugin] Cleaned up successfully');
   }
@@ -292,6 +304,59 @@ export class ClaudeCodePlugin implements Plugin {
       };
       this.onActivity(activityEvent);
       this.handleTaskFailure(verification);
+    });
+
+    // WSL Optimizer event handlers
+    this.wslOptimizer.on('wsl-ready', (wslInfo) => {
+      const activityEvent: ActivityEvent = {
+        id: `wsl-ready-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'system_event',
+        source: 'claude-code-plugin',
+        message: `WSL environment ready: ${wslInfo.distro}`,
+        details: {
+          severity: 'low'
+        },
+        metadata: { wslInfo }
+      };
+      this.onActivity(activityEvent);
+    });
+
+    // Drift Detector event handlers
+    this.driftDetector.on('baseline-loaded', (baselineInfo) => {
+      const activityEvent: ActivityEvent = {
+        id: `drift-baseline-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'plugin_event',
+        source: 'claude-code-plugin',
+        message: `Package.json baseline loaded for drift detection: ${baselineInfo.projectPath}`,
+        details: {
+          severity: 'low'
+        },
+        metadata: { baselineInfo }
+      };
+      this.onActivity(activityEvent);
+    });
+
+    this.driftDetector.on('health-check-complete', (healthReport) => {
+      const activityEvent: ActivityEvent = {
+        id: `drift-health-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'plugin_event',
+        source: 'claude-code-plugin',
+        message: `Dependency health check complete: ${healthReport.outdatedDependencies.length} outdated, ${healthReport.securityVulnerabilities.length} vulnerabilities`,
+        details: {
+          severity: healthReport.securityVulnerabilities.length > 0 ? 'high' : 
+                   healthReport.outdatedDependencies.length > 5 ? 'medium' : 'low'
+        },
+        metadata: { healthReport }
+      };
+      this.onActivity(activityEvent);
+
+      // Auto-escalate security vulnerabilities
+      if (healthReport.securityVulnerabilities.length > 0) {
+        this.handleSecurityVulnerabilities(healthReport.securityVulnerabilities);
+      }
     });
   }
 
@@ -491,7 +556,9 @@ export class ClaudeCodePlugin implements Plugin {
       totalEvents: await this.historyManager.getTotalEventCount(),
       lastActivity: await this.historyManager.getLastActivityTime(),
       taskVerification: await this.getVerificationStats(),
-      activeTaskVerifications: this.getActiveVerifications().size
+      activeTaskVerifications: this.getActiveVerifications().size,
+      systemInfo: this.wslOptimizer.getSystemInfo(),
+      pathCacheStats: this.wslOptimizer.getPathCacheStats()
     };
 
     // Add struggle statistics if userId is provided
@@ -508,6 +575,152 @@ export class ClaudeCodePlugin implements Plugin {
       active: this.isActive,
       stats: baseStats
     };
+  }
+
+  // WSL Optimizer public API
+  async generateTurboPrompt(basePrompt?: string): Promise<TurboPromptEnhancement> {
+    try {
+      return this.wslOptimizer.generateTurboPrompt(basePrompt);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error generating turbo prompt:', error);
+      throw error;
+    }
+  }
+
+  async translatePath(path: string): Promise<WSLPathMapping> {
+    try {
+      return await this.wslOptimizer.translatePath(path);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error translating path:', error);
+      throw error;
+    }
+  }
+
+  async batchTranslatePaths(paths: string[]): Promise<WSLPathMapping[]> {
+    try {
+      return await this.wslOptimizer.batchTranslatePaths(paths);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error batch translating paths:', error);
+      throw error;
+    }
+  }
+
+  async getOptimizedCommand(command: string, workingDir?: string): Promise<string> {
+    try {
+      return await this.wslOptimizer.getOptimizedCommand(command, workingDir);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error optimizing command:', error);
+      throw error;
+    }
+  }
+
+  getSystemInfo(): SystemInfo | undefined {
+    return this.wslOptimizer.getSystemInfo();
+  }
+
+  clearPathCache(): void {
+    this.wslOptimizer.clearPathCache();
+  }
+
+  // Security vulnerability handler
+  private async handleSecurityVulnerabilities(vulnerabilities: any[]): Promise<void> {
+    try {
+      console.log(`[Claude Code Plugin] 🚨 Security vulnerabilities detected: ${vulnerabilities.length}`);
+
+      if (this.api) {
+        await this.api.escalation.trigger({
+          type: 'security-vulnerabilities',
+          severity: 'high',
+          message: `${vulnerabilities.length} security vulnerabilities detected in dependencies`,
+          context: {
+            vulnerabilities,
+            escalationPath: 'user_notify'
+          },
+          plugin: 'claude-code'
+        });
+      }
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error handling security vulnerabilities:', error);
+    }
+  }
+
+  // Drift Detector public API
+  async checkImportViolation(importStatement: string, filePath: string, line?: number): Promise<ImportViolation | null> {
+    try {
+      const violation = await this.driftDetector.checkImportViolation(importStatement, filePath, line);
+      
+      if (violation) {
+        const action = await this.driftDetector.processViolation(violation);
+        console.log(`[Claude Code Plugin] Import violation: ${action.action} - ${action.reason}`);
+        
+        // Handle drift action
+        if (action.action === 'pause_session') {
+          console.log(`[Claude Code Plugin] ⏸️ Session paused due to import violations`);
+          
+          if (this.api) {
+            await this.api.escalation.trigger({
+              type: 'import-violations-threshold',
+              severity: 'medium',
+              message: action.reason,
+              context: { action, violation },
+              plugin: 'claude-code'
+            });
+          }
+        }
+      }
+      
+      return violation;
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error checking import violation:', error);
+      return null;
+    }
+  }
+
+  async getDependencyHealth(): Promise<HealthReport> {
+    try {
+      return await this.driftDetector.checkDependencyHealth();
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error getting dependency health:', error);
+      throw error;
+    }
+  }
+
+  async researchDependencyFix(dependency: string): Promise<FixRecommendation> {
+    try {
+      return await this.driftDetector.researchDependencyFix(dependency);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error researching dependency fix:', error);
+      throw error;
+    }
+  }
+
+  getViolationQueue(): ImportViolation[] {
+    return this.driftDetector.getViolationQueue();
+  }
+
+  clearViolationQueue(): void {
+    this.driftDetector.clearViolationQueue();
+  }
+
+  getPackageJsonBaseline(): PackageJson | undefined {
+    return this.driftDetector.getBaseline();
+  }
+
+  async refreshDriftBaseline(): Promise<void> {
+    try {
+      await this.driftDetector.refreshBaseline();
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error refreshing drift baseline:', error);
+      throw error;
+    }
+  }
+
+  getViolationStats(): {
+    total: number;
+    byType: Record<string, number>;
+    bySeverity: Record<string, number>;
+  } {
+    return this.driftDetector.getViolationStats();
   }
 }
 
