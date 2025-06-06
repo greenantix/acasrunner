@@ -54,7 +54,7 @@ export class StartupService {
   }
 
   private async performInitialization(): Promise<StartupStatus> {
-    console.log('🚀 Starting ACAS Vector Storage initialization...');
+    console.log('🚀 Starting leo Vector Storage initialization...');
     
     const errors: string[] = [];
     const services = {
@@ -136,9 +136,9 @@ export class StartupService {
     };
 
     if (allServicesInitialized) {
-      console.log('🎉 ACAS Vector Storage initialization completed successfully!');
+      console.log('🎉 leo Vector Storage initialization completed successfully!');
     } else {
-      console.warn('⚠️ ACAS Vector Storage initialization completed with errors');
+      console.warn('⚠️ leo Vector Storage initialization completed with errors');
     }
 
     // Clear the promise to allow re-initialization if needed
@@ -152,7 +152,7 @@ export class StartupService {
   }
 
   async reinitialize(): Promise<StartupStatus> {
-    console.log('🔄 Reinitializing ACAS Vector Storage...');
+    console.log('🔄 Reinitializing leo Vector Storage...');
     this.status.initialized = false;
     this.initializationPromise = null;
     return this.initialize();

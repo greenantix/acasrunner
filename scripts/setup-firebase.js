@@ -2,7 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 
 async function setupFirebase() {
-  console.log('🔥 Setting up Firebase integration for ACAS...\n');
+  console.log('🔥 Setting up Firebase integration for leo...\n');
 
   try {
     // Check if .env.local exists
@@ -34,10 +34,10 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
 NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX
 
-# ACAS Local Configuration
-ACAS_LOCAL_DB_PATH=./data/acas_vectors.db
-ACAS_LM_STUDIO_URL=http://localhost:1234
-ACAS_CACHE_SIZE=1000
+# leo Local Configuration
+leo_LOCAL_DB_PATH=./data/leo_vectors.db
+leo_LM_STUDIO_URL=http://localhost:1234
+leo_CACHE_SIZE=1000
 `;
       
       await fs.writeFile(envPath, envTemplate);

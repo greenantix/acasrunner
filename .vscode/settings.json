@@ -71,7 +71,7 @@
   ],
   
   "claude.autoSave": true,
-  "claude.projectRoot": "D:\\\\AI\\\\acas-runner-local",
+  "claude.projectRoot": "D:\\\\AI\\\\leo-runner-local",
   "claude.enableFileWatching": true,
   "claude.maxFileSize": 1000000,
   "claude.preferredModel": "claude-3-5-sonnet-20241022",
@@ -81,7 +81,7 @@
   
   "json.format.enable": true,
   
-  "eslint.workingDirectories": [".", "./functions", "./acasrunner"],
+  "eslint.workingDirectories": [".", "./functions", "./leorunner"],
   "eslint.validate": [
     "javascript",
     "javascriptreact",
@@ -120,3 +120,4 @@
     }
   }
 }
+

@@ -5,7 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'ACAS Runner',
+  title: 'leo Runner',
   description: 'AI Coding Assistant Supervisor - Real-time development workflow automation with AI',
   icons: {
     icon: '/logo.png',
@@ -29,8 +29,8 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="theme-acas-runner"
-          themes={['light', 'dark', 'theme-terminal', 'theme-claudemode', 'theme-acas-runner']}
+          defaultTheme="theme-leo-runner"
+          themes={['light', 'dark', 'theme-terminal', 'theme-claudemode', 'theme-leo-runner']}
           enableSystem={false} 
         >
           {children}
@@ -40,3 +40,4 @@ export default function RootLayout({
     </html>
   );
 }
+

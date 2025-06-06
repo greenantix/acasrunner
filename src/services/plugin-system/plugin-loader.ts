@@ -175,3 +175,4 @@ export class PluginLoader {
     this.loadedPlugins.delete(id);
   }
 }
+

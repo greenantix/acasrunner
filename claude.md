@@ -1,13 +1,13 @@
 ## **Phase 2: Claude Code Integration \- Stubbed Project Structure**
 
-We are now entering Phase 2 of the ACAS Runner app development process, focusing on integrating Claude Code. The initial task is to create a stubbed-out project structure and clean up existing mock implementations.
+We are now entering Phase 2 of the leo Runner app development process, focusing on integrating Claude Code. The initial task is to create a stubbed-out project structure and clean up existing mock implementations.
 
 ### **Claude-step1-CoreCleanup.md**
 
 This file outlines the critical first step: cleaning up the core system by removing mock implementations and unused analytics components.  
 `# Claude-step1-CoreCleanup.md`
 
-`**Objective:** Clean up mock implementations and unused analytics components in the ACAS Runner.`
+`**Objective:** Clean up mock implementations and unused analytics components in the leo Runner.`
 
 `` **Full Filepath:** `docs/development/Claude-step1-CoreCleanup.md` ``
 
@@ -95,3 +95,4 @@ This file details the initial implementation tasks for the core Claude Code plug
 ``I've created two task files for Phase 2: `Claude-step1-CoreCleanup.md` and `Claude-step2-PluginCore.md`.``
 
 `Would you like to see the content of any specific stubbed files, or are you ready for further steps in the development process?`  
+

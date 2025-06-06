@@ -254,7 +254,7 @@ export interface PluginManifest {
   dependencies?: string[];
   engines?: {
     node?: string;
-    acas?: string;
+    leo?: string;
   };
   keywords?: string[];
   repository?: {
@@ -263,3 +263,4 @@ export interface PluginManifest {
   };
   license?: string;
 }
+

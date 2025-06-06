@@ -24,7 +24,7 @@ export function ThemeSwitcher() {
     'dark': { name: 'Dark', description: 'Standard dark theme with teal accents' },
     'theme-terminal': { name: 'Terminal', description: 'Classic green-on-black terminal styling' },
     'theme-claudemode': { name: 'Claude Mode', description: 'Elegant purple-accented theme' },
-    'theme-acas-runner': { name: 'ACAS Runner', description: 'Bold orange theme matching the brand' },
+    'theme-leo-runner': { name: 'leo Runner', description: 'Bold orange theme matching the brand' },
   };
 
   if (!mounted) {
@@ -74,3 +74,4 @@ export function ThemeSwitcher() {
     </Card>
   );
 }
+

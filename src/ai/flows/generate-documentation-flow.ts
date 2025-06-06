@@ -67,7 +67,7 @@ const generateDocumentationFlow = ai.defineFlow(
   async (input: GenerateDocumentationInput) => {
     // In a real scenario, you might fetch additional context here,
     // e.g., from a version control system or task manager, or use structuredContext.
-    if (input.docType === "readme" && !input.projectName && !input.context.includes("ACAS Runner")) {
+    if (input.docType === "readme" && !input.projectName && !input.context.includes("leo Runner")) {
         // Mocking a slightly more complex response for README if project name is missing from input
         return {
             generatedContent: `# Mock Project README\n\nThis is a mock README generated because no project name was provided.\n\n## Introduction\nThis project does amazing things.\n\n## Features\n- Feature 1\n- Feature 2\n\n## Getting Started\n\`\`\`bash\nnpm install mock-project\n\`\`\`\n`,
@@ -93,3 +93,4 @@ const generateDocumentationFlow = ai.defineFlow(
     return output;
   }
 );
+

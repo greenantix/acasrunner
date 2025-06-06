@@ -182,3 +182,4 @@ if (typeof window === 'undefined') {
   // Only run on server side
   serverFileSystemMonitor.startWatching();
 }
+

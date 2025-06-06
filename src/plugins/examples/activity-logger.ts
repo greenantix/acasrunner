@@ -4,7 +4,7 @@ const ActivityLoggerPlugin: Plugin = {
   name: 'Activity Logger',
   id: 'activity-logger',
   version: '1.0.0',
-  author: 'ACAS Team',
+  author: 'leo Team',
   description: 'Logs all activity events to console with timestamps',
   icon: '📝',
   permissions: [
@@ -102,3 +102,4 @@ const ActivityLoggerPlugin: Plugin = {
 };
 
 export default ActivityLoggerPlugin;
+

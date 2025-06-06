@@ -4,7 +4,7 @@ const PerformanceMonitorPlugin: Plugin = {
   name: 'Performance Monitor',
   id: 'performance-monitor',
   version: '1.0.0',
-  author: 'ACAS Team',
+  author: 'leo Team',
   description: 'Monitors system performance and alerts on issues',
   icon: '⚡',
   permissions: [
@@ -145,3 +145,4 @@ function getMemoryTrend(data: any[]) {
 }
 
 export default PerformanceMonitorPlugin;
+

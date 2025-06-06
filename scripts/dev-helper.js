@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Development helper for ACAS Runner
+// Development helper for leo Runner
 const { spawn } = require('child_process');
 
 const commands = {
@@ -24,3 +24,4 @@ if (!command || !commands[command]) {
 console.log(`Running: ${commands[command]}`);
 const child = spawn('npm', ['run', command], { stdio: 'inherit' });
 child.on('close', (code) => process.exit(code));
+

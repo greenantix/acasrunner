@@ -33,15 +33,15 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ACASHoverProvider = void 0;
+exports.leoHoverProvider = void 0;
 const vscode = __importStar(require("vscode"));
-class ACASHoverProvider {
+class leoHoverProvider {
     constructor(aiAssistant) {
         this.aiAssistant = aiAssistant;
     }
     async provideHover(document, position, token) {
         // Only provide hover info if configured to do so
-        const config = vscode.workspace.getConfiguration('acas');
+        const config = vscode.workspace.getConfiguration('leo');
         if (!config.get('showInlineHints')) {
             return null;
         }
@@ -50,10 +50,10 @@ class ACASHoverProvider {
             return hover;
         }
         catch (error) {
-            console.error('ACAS hover provider error:', error);
+            console.error('leo hover provider error:', error);
             return null;
         }
     }
 }
-exports.ACASHoverProvider = ACASHoverProvider;
+exports.leoHoverProvider = leoHoverProvider;
 //# sourceMappingURL=hover-provider.js.map

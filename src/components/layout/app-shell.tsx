@@ -130,7 +130,7 @@ function AppShellClient({ children }: { children: React.ReactNode }) {
   const currentPageLabel =
     navItems.find(
       item => pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
-    )?.label || 'ACAS Runner';
+    )?.label || 'leo Runner';
 
   return (
     <div className="flex flex-1">
@@ -253,3 +253,4 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+

@@ -1,5 +1,5 @@
 {
-	"name": "acas-runner",
+	"name": "leo-runner",
 	"version": "0.1.0",
 	"private": true,
 	"description": "AI-powered developer workflow automation system",
@@ -161,3 +161,4 @@
 		"not op_mini all"
 	]
 }
+

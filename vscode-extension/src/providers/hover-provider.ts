@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { AIAssistant } from '../ai/ai-assistant';
 
-export class ACASHoverProvider implements vscode.HoverProvider {
+export class leoHoverProvider implements vscode.HoverProvider {
     private aiAssistant: AIAssistant;
 
     constructor(aiAssistant: AIAssistant) {
@@ -14,7 +14,7 @@ export class ACASHoverProvider implements vscode.HoverProvider {
         token: vscode.CancellationToken
     ): Promise<vscode.Hover | null> {
         // Only provide hover info if configured to do so
-        const config = vscode.workspace.getConfiguration('acas');
+        const config = vscode.workspace.getConfiguration('leo');
         if (!config.get('showInlineHints')) {
             return null;
         }
@@ -23,7 +23,7 @@ export class ACASHoverProvider implements vscode.HoverProvider {
             const hover = await this.aiAssistant.provideHover(document, position);
             return hover;
         } catch (error) {
-            console.error('ACAS hover provider error:', error);
+            console.error('leo hover provider error:', error);
             return null;
         }
     }

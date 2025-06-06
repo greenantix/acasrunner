@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ACASConnection } from '../communication/acas-connection';
+import { leoConnection } from '../communication/leo-connection';
 
 export interface Workflow {
     id: string;
@@ -18,17 +18,17 @@ export interface WorkflowStep {
 }
 
 export class WorkflowManager {
-    private acasConnection: ACASConnection;
+    private leoConnection: leoConnection;
     private runningWorkflows: Map<string, Workflow> = new Map();
 
-    constructor(acasConnection: ACASConnection) {
-        this.acasConnection = acasConnection;
+    constructor(leoConnection: leoConnection) {
+        this.leoConnection = leoConnection;
         this.setupEventListeners();
     }
 
     async getAvailableWorkflows(): Promise<Workflow[]> {
         try {
-            const response = await this.acasConnection.sendHTTP('workflows');
+            const response = await this.leoConnection.sendHTTP('workflows');
             return response.workflows || [];
         } catch (error) {
             throw new Error(`Failed to get workflows: ${error}`);
@@ -37,7 +37,7 @@ export class WorkflowManager {
 
     async runWorkflow(workflowId: string, inputs?: any): Promise<void> {
         try {
-            const response = await this.acasConnection.sendHTTP(`workflows/${workflowId}/execute`, {
+            const response = await this.leoConnection.sendHTTP(`workflows/${workflowId}/execute`, {
                 inputs: inputs || {},
                 source: 'vscode-extension'
             });
@@ -60,7 +60,7 @@ export class WorkflowManager {
 
     async stopWorkflow(executionId: string): Promise<void> {
         try {
-            await this.acasConnection.sendHTTP(`workflows/executions/${executionId}/stop`, {});
+            await this.leoConnection.sendHTTP(`workflows/executions/${executionId}/stop`, {});
             
             const workflow = this.runningWorkflows.get(executionId);
             if (workflow) {
@@ -79,7 +79,7 @@ export class WorkflowManager {
     }
 
     private setupEventListeners(): void {
-        this.acasConnection.onMessage(event => {
+        this.leoConnection.onMessage(event => {
             if (event.type === 'workflow_status') {
                 this.handleWorkflowStatusUpdate(event.data);
             }

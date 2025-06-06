@@ -17,5 +17,6 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACAS_RUNNER }}
-          projectId: acas-runner
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_leo_RUNNER }}
+          projectId: leo-runner
+

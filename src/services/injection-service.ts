@@ -34,3 +34,4 @@ export async function sendToRooCode(content: string, opts?: { autoPaste?: boolea
     }
   }
 }
+

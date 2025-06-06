@@ -1,12 +1,12 @@
 {
   "version": "1.0",
   "project": {
-    "name": "ACAS Runner",
+    "name": "leo Runner",
     "type": "next.js",
     "language": "typescript",
     "framework": "react",
     "description": "AI-powered developer workflow automation system",
-    "root": "D:\\AI\\acas-runner-local"
+    "root": "D:\\AI\\leo-runner-local"
   },
   "tools": {
     "file_operations": {
@@ -17,7 +17,7 @@
         "pages/**/*",
         "lib/**/*",
         "functions/**/*",
-        "acasrunner/**/*"
+        "leorunner/**/*"
       ],
       "ignore_patterns": [
         "node_modules/**/*",

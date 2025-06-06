@@ -1,5 +1,5 @@
 {
-  "name": "acas-runner",
+  "name": "leo-runner",
   "private": true,
   "main": "lib/index.js",
   "scripts": {
@@ -36,4 +36,5 @@
     "typescript": "^5.8.3"
   }
 }
+
 

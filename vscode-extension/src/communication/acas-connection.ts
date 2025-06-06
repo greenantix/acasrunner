@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import WebSocket from 'ws';
 import axios from 'axios';
 
-export class ACASConnection {
+export class leoConnection {
     private ws: WebSocket | null = null;
     private serverUrl: string;
     private isConnected: boolean = false;
@@ -10,7 +10,7 @@ export class ACASConnection {
     private eventEmitter = new vscode.EventEmitter<any>();
 
     constructor() {
-        const config = vscode.workspace.getConfiguration('acas');
+        const config = vscode.workspace.getConfiguration('leo');
         this.serverUrl = config.get('serverUrl') as string;
     }
 
@@ -36,7 +36,7 @@ export class ACASConnection {
                 }
 
                 this.ws.on('open', () => {
-                    console.log('Connected to ACAS Runner');
+                    console.log('Connected to leo Runner');
                     this.isConnected = true;
                     this.startHeartbeat();
                     resolve();
@@ -52,7 +52,7 @@ export class ACASConnection {
                 });
 
                 this.ws.on('close', () => {
-                    console.log('Disconnected from ACAS Runner');
+                    console.log('Disconnected from leo Runner');
                     this.isConnected = false;
                     this.scheduleReconnect();
                 });
@@ -70,7 +70,7 @@ export class ACASConnection {
                 }, 10000);
             });
         } catch (error) {
-            throw new Error(`Failed to connect to ACAS Runner: ${error}`);
+            throw new Error(`Failed to connect to leo Runner: ${error}`);
         }
     }
 
@@ -98,7 +98,7 @@ export class ACASConnection {
                 throw new Error(`Server returned status ${response.status}`);
             }
         } catch (error) {
-            throw new Error(`Cannot reach ACAS Runner at ${this.serverUrl}`);
+            throw new Error(`Cannot reach leo Runner at ${this.serverUrl}`);
         }
     }
 
@@ -154,7 +154,7 @@ export class ACASConnection {
         if (this.isConnected && this.ws) {
             this.ws.send(JSON.stringify(message));
         } else {
-            console.warn('Cannot send message: not connected to ACAS Runner');
+            console.warn('Cannot send message: not connected to leo Runner');
         }
     }
 

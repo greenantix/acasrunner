@@ -1,15 +1,15 @@
 import * as vscode from 'vscode';
-import { ACASConnection } from '../communication/acas-connection';
+import { leoConnection } from '../communication/leo-connection';
 
-export class ACASActivityTreeDataProvider implements vscode.TreeDataProvider<ActivityTreeItem> {
+export class leoActivityTreeDataProvider implements vscode.TreeDataProvider<ActivityTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<ActivityTreeItem | undefined | null | void> = new vscode.EventEmitter<ActivityTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<ActivityTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
     private activities: any[] = [];
-    private acasConnection: ACASConnection;
+    private leoConnection: leoConnection;
 
-    constructor(acasConnection: ACASConnection) {
-        this.acasConnection = acasConnection;
+    constructor(leoConnection: leoConnection) {
+        this.leoConnection = leoConnection;
         this.setupEventListeners();
     }
 
@@ -31,7 +31,7 @@ export class ACASActivityTreeDataProvider implements vscode.TreeDataProvider<Act
     }
 
     private setupEventListeners(): void {
-        this.acasConnection.onMessage(event => {
+        this.leoConnection.onMessage(event => {
             if (event.type === 'activity') {
                 this.activities.unshift(event.data);
                 
@@ -61,15 +61,15 @@ export class ACASActivityTreeDataProvider implements vscode.TreeDataProvider<Act
     }
 }
 
-export class ACASWorkflowTreeDataProvider implements vscode.TreeDataProvider<WorkflowTreeItem> {
+export class leoWorkflowTreeDataProvider implements vscode.TreeDataProvider<WorkflowTreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<WorkflowTreeItem | undefined | null | void> = new vscode.EventEmitter<WorkflowTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<WorkflowTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
     private workflows: any[] = [];
-    private acasConnection: ACASConnection;
+    private leoConnection: leoConnection;
 
-    constructor(acasConnection: ACASConnection) {
-        this.acasConnection = acasConnection;
+    constructor(leoConnection: leoConnection) {
+        this.leoConnection = leoConnection;
         this.loadWorkflows();
     }
 
@@ -93,7 +93,7 @@ export class ACASWorkflowTreeDataProvider implements vscode.TreeDataProvider<Wor
 
     private async loadWorkflows(): Promise<void> {
         try {
-            const response = await this.acasConnection.sendHTTP('workflows');
+            const response = await this.leoConnection.sendHTTP('workflows');
             this.workflows = response.workflows || [];
         } catch (error) {
             console.error('Failed to load workflows:', error);
@@ -109,7 +109,7 @@ export class ACASWorkflowTreeDataProvider implements vscode.TreeDataProvider<Wor
                 vscode.TreeItemCollapsibleState.None,
                 workflow,
                 {
-                    command: 'acas.runWorkflow',
+                    command: 'leo.runWorkflow',
                     title: 'Run Workflow',
                     arguments: [workflow.id]
                 }

@@ -260,7 +260,7 @@ export class DatabaseSyncService extends EventEmitter {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(
-          'acas_pending_operations',
+          'leo_pending_operations',
           JSON.stringify(this.pendingOperations)
         );
       } catch (error) {
@@ -303,7 +303,7 @@ export class DatabaseSyncService extends EventEmitter {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(
-          'acas_pending_operations',
+          'leo_pending_operations',
           JSON.stringify(this.pendingOperations)
         );
       } catch (error) {
@@ -345,7 +345,7 @@ export class DatabaseSyncService extends EventEmitter {
     }
 
     try {
-      const stored = localStorage.getItem('acas_pending_operations');
+      const stored = localStorage.getItem('leo_pending_operations');
       if (stored) {
         this.pendingOperations = JSON.parse(stored);
         console.log(`Loaded ${this.pendingOperations.length} pending operations from storage`);
@@ -412,7 +412,7 @@ export class DatabaseSyncService extends EventEmitter {
     this.pendingOperations = [];
     
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('acas_pending_operations');
+      localStorage.removeItem('leo_pending_operations');
     }
     
     this.emit('pending_operations_cleared');

@@ -36,14 +36,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WorkflowManager = void 0;
 const vscode = __importStar(require("vscode"));
 class WorkflowManager {
-    constructor(acasConnection) {
+    constructor(leoConnection) {
         this.runningWorkflows = new Map();
-        this.acasConnection = acasConnection;
+        this.leoConnection = leoConnection;
         this.setupEventListeners();
     }
     async getAvailableWorkflows() {
         try {
-            const response = await this.acasConnection.sendHTTP('workflows');
+            const response = await this.leoConnection.sendHTTP('workflows');
             return response.workflows || [];
         }
         catch (error) {
@@ -52,7 +52,7 @@ class WorkflowManager {
     }
     async runWorkflow(workflowId, inputs) {
         try {
-            const response = await this.acasConnection.sendHTTP(`workflows/${workflowId}/execute`, {
+            const response = await this.leoConnection.sendHTTP(`workflows/${workflowId}/execute`, {
                 inputs: inputs || {},
                 source: 'vscode-extension'
             });
@@ -72,7 +72,7 @@ class WorkflowManager {
     }
     async stopWorkflow(executionId) {
         try {
-            await this.acasConnection.sendHTTP(`workflows/executions/${executionId}/stop`, {});
+            await this.leoConnection.sendHTTP(`workflows/executions/${executionId}/stop`, {});
             const workflow = this.runningWorkflows.get(executionId);
             if (workflow) {
                 workflow.status = 'failed';
@@ -88,7 +88,7 @@ class WorkflowManager {
         return Array.from(this.runningWorkflows.values());
     }
     setupEventListeners() {
-        this.acasConnection.onMessage(event => {
+        this.leoConnection.onMessage(event => {
             if (event.type === 'workflow_status') {
                 this.handleWorkflowStatusUpdate(event.data);
             }

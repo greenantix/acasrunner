@@ -14,8 +14,8 @@
       ]
     },
     {
-      "source": "acasrunner",
-      "codebase": "acasrunner",
+      "source": "leorunner",
+      "codebase": "leorunner",
       "ignore": [
         "node_modules",
         ".git",
@@ -43,3 +43,4 @@
     ]
   }
 }
+

@@ -6,3 +6,4 @@ export default function HomePage() {
   // Return null or a simple loading state if necessary.
   return null;
 }
+

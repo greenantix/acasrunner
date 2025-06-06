@@ -3,7 +3,7 @@ export default {
   id: 'activity-logger',
   name: 'Activity Logger',
   version: '1.0.0',
-  author: 'ACAS System',
+  author: 'leo System',
   description: 'Logs all activity events with timestamps and provides activity analysis',
   icon: '📝',
   permissions: [
@@ -241,3 +241,4 @@ export default {
     logAnalysisEnabled: true
   }
 };
+

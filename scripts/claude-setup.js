@@ -65,7 +65,7 @@ if (fs.existsSync(gitignorePath)) {
 
 // Create a project analysis file
 const projectAnalysis = {
-  name: "ACAS Runner",
+  name: "leo Runner",
   type: "Next.js with AI Integration",
   framework: "React + TypeScript",
   aiProviders: ["Anthropic Claude", "OpenAI", "DeepSeek", "Google AI"],
@@ -96,7 +96,7 @@ console.log('✅ Created project analysis file');
 
 // Create a development helper script
 const devHelper = `#!/usr/bin/env node
-// Development helper for ACAS Runner
+// Development helper for leo Runner
 const { spawn } = require('child_process');
 
 const commands = {
@@ -148,7 +148,8 @@ requiredEnvVars.forEach(envVar => {
 console.log('\\n🎉 Claude Code setup complete!');
 console.log('\\n📋 Next steps:');
 console.log('1. Install development dependencies: npm install');
-console.log('2. Open workspace: code acas-runner.code-workspace');
+console.log('2. Open workspace: code leo-runner.code-workspace');
 console.log('3. Install recommended extensions');
 console.log('4. Start development: npm run dev:ai');
 console.log('\\n🚀 Happy coding with Claude!');
+

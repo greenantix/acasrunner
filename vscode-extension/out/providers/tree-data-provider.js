@@ -33,14 +33,14 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WorkflowTreeItem = exports.ActivityTreeItem = exports.ACASWorkflowTreeDataProvider = exports.ACASActivityTreeDataProvider = void 0;
+exports.WorkflowTreeItem = exports.ActivityTreeItem = exports.leoWorkflowTreeDataProvider = exports.leoActivityTreeDataProvider = void 0;
 const vscode = __importStar(require("vscode"));
-class ACASActivityTreeDataProvider {
-    constructor(acasConnection) {
+class leoActivityTreeDataProvider {
+    constructor(leoConnection) {
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         this.activities = [];
-        this.acasConnection = acasConnection;
+        this.leoConnection = leoConnection;
         this.setupEventListeners();
     }
     refresh() {
@@ -57,7 +57,7 @@ class ACASActivityTreeDataProvider {
         return Promise.resolve([]);
     }
     setupEventListeners() {
-        this.acasConnection.onMessage(event => {
+        this.leoConnection.onMessage(event => {
             if (event.type === 'activity') {
                 this.activities.unshift(event.data);
                 // Keep only last 20 activities
@@ -77,13 +77,13 @@ class ACASActivityTreeDataProvider {
         });
     }
 }
-exports.ACASActivityTreeDataProvider = ACASActivityTreeDataProvider;
-class ACASWorkflowTreeDataProvider {
-    constructor(acasConnection) {
+exports.leoActivityTreeDataProvider = leoActivityTreeDataProvider;
+class leoWorkflowTreeDataProvider {
+    constructor(leoConnection) {
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         this.workflows = [];
-        this.acasConnection = acasConnection;
+        this.leoConnection = leoConnection;
         this.loadWorkflows();
     }
     refresh() {
@@ -102,7 +102,7 @@ class ACASWorkflowTreeDataProvider {
     }
     async loadWorkflows() {
         try {
-            const response = await this.acasConnection.sendHTTP('workflows');
+            const response = await this.leoConnection.sendHTTP('workflows');
             this.workflows = response.workflows || [];
         }
         catch (error) {
@@ -113,14 +113,14 @@ class ACASWorkflowTreeDataProvider {
     getWorkflowItems() {
         return this.workflows.map(workflow => {
             return new WorkflowTreeItem(workflow.name, workflow.description || '', vscode.TreeItemCollapsibleState.None, workflow, {
-                command: 'acas.runWorkflow',
+                command: 'leo.runWorkflow',
                 title: 'Run Workflow',
                 arguments: [workflow.id]
             });
         });
     }
 }
-exports.ACASWorkflowTreeDataProvider = ACASWorkflowTreeDataProvider;
+exports.leoWorkflowTreeDataProvider = leoWorkflowTreeDataProvider;
 class ActivityTreeItem extends vscode.TreeItem {
     constructor(label, description, collapsibleState, activity) {
         super(label, collapsibleState);

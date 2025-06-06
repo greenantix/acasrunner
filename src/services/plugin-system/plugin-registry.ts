@@ -395,3 +395,4 @@ export class PluginRegistry extends EventEmitter {
 
 // Singleton instance
 export const pluginRegistry = new PluginRegistry();
+

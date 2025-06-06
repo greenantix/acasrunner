@@ -1,13 +1,13 @@
 import { firebaseAdmin } from './admin';
 
-export class ACASError extends Error {
+export class leoError extends Error {
   constructor(
     message: string,
     public errorCode?: string,
     public details?: Record<string, any>
   ) {
     super(message);
-    this.name = 'ACASError';
+    this.name = 'leoError';
   }
 }
 
@@ -40,7 +40,7 @@ export class ErrorHandler {
         timestamp: new Date(),
       };
 
-      if (error instanceof ACASError) {
+      if (error instanceof leoError) {
         errorDoc.errorCode = error.errorCode;
         errorDoc.details = error.details;
       }
@@ -135,7 +135,7 @@ export class ErrorHandler {
     return async (error: Error, userUid?: string, context?: Record<string, any>) => {
       await this.logError(error, userUid, context);
       
-      if (error instanceof ACASError) {
+      if (error instanceof leoError) {
         return {
           statusCode: 400,
           message: error.message,

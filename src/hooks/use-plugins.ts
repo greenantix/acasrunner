@@ -102,3 +102,4 @@ export function usePluginAPI() {
   const { registry } = usePlugins();
   return registry?.getPluginAPI();
 }
+

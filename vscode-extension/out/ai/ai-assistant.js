@@ -36,12 +36,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AIAssistant = void 0;
 const vscode = __importStar(require("vscode"));
 class AIAssistant {
-    constructor(acasConnection) {
-        this.acasConnection = acasConnection;
+    constructor(leoConnection) {
+        this.leoConnection = leoConnection;
     }
     async ask(question, context) {
         try {
-            const response = await this.acasConnection.sendHTTP('chat/sessions', {
+            const response = await this.leoConnection.sendHTTP('chat/sessions', {
                 message: question,
                 context: context || {},
                 source: 'vscode-extension'
@@ -54,7 +54,7 @@ class AIAssistant {
     }
     async analyzeCode(code, language) {
         try {
-            const response = await this.acasConnection.sendHTTP('ai/analyze-code', {
+            const response = await this.leoConnection.sendHTTP('ai/analyze-code', {
                 code,
                 language,
                 context: {
@@ -70,7 +70,7 @@ class AIAssistant {
     }
     async suggestFix(error, code, language) {
         try {
-            const response = await this.acasConnection.sendHTTP('ai/suggest-fix', {
+            const response = await this.leoConnection.sendHTTP('ai/suggest-fix', {
                 error,
                 code,
                 language,
@@ -86,7 +86,7 @@ class AIAssistant {
     }
     async generateDocumentation(code, language, docType = 'comments') {
         try {
-            const response = await this.acasConnection.sendHTTP('ai/generate-docs', {
+            const response = await this.leoConnection.sendHTTP('ai/generate-docs', {
                 code,
                 language,
                 docType,
@@ -112,7 +112,7 @@ class AIAssistant {
                     character: position.character
                 }
             };
-            const response = await this.acasConnection.sendHTTP('ai/code-completion', context);
+            const response = await this.leoConnection.sendHTTP('ai/code-completion', context);
             if (!response.suggestions) {
                 return [];
             }
@@ -146,7 +146,7 @@ class AIAssistant {
                     character: position.character
                 }
             };
-            const response = await this.acasConnection.sendHTTP('ai/hover-info', context);
+            const response = await this.leoConnection.sendHTTP('ai/hover-info', context);
             if (!response.explanation) {
                 return null;
             }

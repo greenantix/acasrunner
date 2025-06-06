@@ -55,3 +55,4 @@ export async function parseProjectFiles(): Promise<ProjectParseResult> {
   console.log('Project parsing complete (mock).');
   return mockResults;
 }
+

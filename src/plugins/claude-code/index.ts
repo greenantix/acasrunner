@@ -8,8 +8,8 @@ export class ClaudeCodePlugin implements Plugin {
   id = 'claude-code';
   name = 'Claude Code Integration';
   version = '1.0.0';
-  author = 'ACAS Runner Team';
-  description = 'Monitors Claude Code processes and provides seamless integration with ACAS Runner';
+  author = 'leo Runner Team';
+  description = 'Monitors Claude Code processes and provides seamless integration with leo Runner';
   
   permissions: PluginPermission[] = [
     {

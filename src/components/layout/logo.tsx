@@ -10,13 +10,14 @@ export function Logo() {
       <div className="relative h-8 w-8 flex-shrink-0">
         <Image
           src="/logo.png"
-          alt="ACAS Runner"
+          alt="leo Runner"
           fill
           className="object-contain"
           priority
         />
       </div>
-      <span className="font-headline group-data-[collapsible=icon]:hidden">ACAS Runner</span>
+      <span className="font-headline group-data-[collapsible=icon]:hidden">leo Runner</span>
     </Link>
   );
 }
+

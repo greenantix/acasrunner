@@ -1,9 +1,9 @@
 {
-  "name": "acas-runner-extension",
-  "displayName": "ACAS Runner - AI Coding Assistant",
+  "name": "leo-runner-extension",
+  "displayName": "leo Runner - AI Coding Assistant",
   "description": "AI-powered developer workflow automation and monitoring",
   "version": "0.1.0",
-  "publisher": "acas-runner",
+  "publisher": "leo-runner",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -26,89 +26,89 @@
   "contributes": {
     "commands": [
       {
-        "command": "acas.connect",
-        "title": "Connect to ACAS Runner",
-        "category": "ACAS"
+        "command": "leo.connect",
+        "title": "Connect to leo Runner",
+        "category": "leo"
       },
       {
-        "command": "acas.disconnect",
-        "title": "Disconnect from ACAS Runner",
-        "category": "ACAS"
+        "command": "leo.disconnect",
+        "title": "Disconnect from leo Runner",
+        "category": "leo"
       },
       {
-        "command": "acas.openDashboard",
+        "command": "leo.openDashboard",
         "title": "Open Dashboard",
-        "category": "ACAS"
+        "category": "leo"
       },
       {
-        "command": "acas.askAI",
+        "command": "leo.askAI",
         "title": "Ask AI Assistant",
-        "category": "ACAS"
+        "category": "leo"
       },
       {
-        "command": "acas.analyzeCode",
+        "command": "leo.analyzeCode",
         "title": "Analyze Current Code",
-        "category": "ACAS"
+        "category": "leo"
       },
       {
-        "command": "acas.runWorkflow",
+        "command": "leo.runWorkflow",
         "title": "Run Workflow",
-        "category": "ACAS"
+        "category": "leo"
       },
       {
-        "command": "acas.showActivity",
+        "command": "leo.showActivity",
         "title": "Show Activity Log",
-        "category": "ACAS"
+        "category": "leo"
       }
     ],
     "views": {
       "explorer": [
         {
-          "id": "acasActivityView",
-          "name": "ACAS Activity",
-          "when": "acas:connected"
+          "id": "leoActivityView",
+          "name": "leo Activity",
+          "when": "leo:connected"
         },
         {
-          "id": "acasWorkflowsView", 
-          "name": "ACAS Workflows",
-          "when": "acas:connected"
+          "id": "leoWorkflowsView", 
+          "name": "leo Workflows",
+          "when": "leo:connected"
         }
       ]
     },
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "acas",
-          "title": "ACAS Runner",
+          "id": "leo",
+          "title": "leo Runner",
           "icon": "$(robot)"
         }
       ]
     },
     "configuration": {
-      "title": "ACAS Runner",
+      "title": "leo Runner",
       "properties": {
-        "acas.serverUrl": {
+        "leo.serverUrl": {
           "type": "string",
           "default": "http://localhost:9002",
-          "description": "ACAS Runner server URL"
+          "description": "leo Runner server URL"
         },
-        "acas.autoConnect": {
+        "leo.autoConnect": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically connect to ACAS Runner on startup"
+          "description": "Automatically connect to leo Runner on startup"
         },
-        "acas.monitorActivity": {
+        "leo.monitorActivity": {
           "type": "boolean",
           "default": true,
           "description": "Monitor file changes and coding activity"
         },
-        "acas.aiProvider": {
+        "leo.aiProvider": {
           "type": "string",
           "enum": ["claude", "openai", "gemini"],
           "default": "claude",
           "description": "Default AI provider for assistance"
         },
-        "acas.showInlineHints": {
+        "leo.showInlineHints": {
           "type": "boolean",
           "default": true,
           "description": "Show AI hints inline in the editor"
@@ -118,25 +118,25 @@
     "menus": {
       "editor/context": [
         {
-          "command": "acas.analyzeCode",
-          "when": "acas:connected",
-          "group": "acas"
+          "command": "leo.analyzeCode",
+          "when": "leo:connected",
+          "group": "leo"
         },
         {
-          "command": "acas.askAI",
-          "when": "acas:connected",
-          "group": "acas"
+          "command": "leo.askAI",
+          "when": "leo:connected",
+          "group": "leo"
         }
       ],
       "view/title": [
         {
-          "command": "acas.connect",
-          "when": "view == acasActivityView && !acas:connected",
+          "command": "leo.connect",
+          "when": "view == leoActivityView && !leo:connected",
           "group": "navigation"
         },
         {
-          "command": "acas.disconnect",
-          "when": "view == acasActivityView && acas:connected",
+          "command": "leo.disconnect",
+          "when": "view == leoActivityView && leo:connected",
           "group": "navigation"
         }
       ]

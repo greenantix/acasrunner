@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
-import { ACASConnection } from '../communication/acas-connection';
+import { leoConnection } from '../communication/leo-connection';
 
 export class AIAssistant {
-    private acasConnection: ACASConnection;
+    private leoConnection: leoConnection;
 
-    constructor(acasConnection: ACASConnection) {
-        this.acasConnection = acasConnection;
+    constructor(leoConnection: leoConnection) {
+        this.leoConnection = leoConnection;
     }
 
     async ask(question: string, context?: any): Promise<string> {
         try {
-            const response = await this.acasConnection.sendHTTP('chat/sessions', {
+            const response = await this.leoConnection.sendHTTP('chat/sessions', {
                 message: question,
                 context: context || {},
                 source: 'vscode-extension'
@@ -24,7 +24,7 @@ export class AIAssistant {
 
     async analyzeCode(code: string, language: string): Promise<any> {
         try {
-            const response = await this.acasConnection.sendHTTP('ai/analyze-code', {
+            const response = await this.leoConnection.sendHTTP('ai/analyze-code', {
                 code,
                 language,
                 context: {
@@ -41,7 +41,7 @@ export class AIAssistant {
 
     async suggestFix(error: string, code: string, language: string): Promise<any> {
         try {
-            const response = await this.acasConnection.sendHTTP('ai/suggest-fix', {
+            const response = await this.leoConnection.sendHTTP('ai/suggest-fix', {
                 error,
                 code,
                 language,
@@ -58,7 +58,7 @@ export class AIAssistant {
 
     async generateDocumentation(code: string, language: string, docType: 'readme' | 'comments' | 'docs_page' = 'comments'): Promise<string> {
         try {
-            const response = await this.acasConnection.sendHTTP('ai/generate-docs', {
+            const response = await this.leoConnection.sendHTTP('ai/generate-docs', {
                 code,
                 language,
                 docType,
@@ -89,7 +89,7 @@ export class AIAssistant {
                 }
             };
 
-            const response = await this.acasConnection.sendHTTP('ai/code-completion', context);
+            const response = await this.leoConnection.sendHTTP('ai/code-completion', context);
             
             if (!response.suggestions) {
                 return [];
@@ -135,7 +135,7 @@ export class AIAssistant {
                 }
             };
 
-            const response = await this.acasConnection.sendHTTP('ai/hover-info', context);
+            const response = await this.leoConnection.sendHTTP('ai/hover-info', context);
             
             if (!response.explanation) {
                 return null;

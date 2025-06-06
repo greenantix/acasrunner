@@ -36,70 +36,70 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
-const acas_connection_1 = require("./communication/acas-connection");
+const leo_connection_1 = require("./communication/leo-connection");
 const activity_monitor_1 = require("./monitoring/activity-monitor");
 const ai_assistant_1 = require("./ai/ai-assistant");
 const workflow_manager_1 = require("./workflows/workflow-manager");
 const completion_provider_1 = require("./providers/completion-provider");
 const hover_provider_1 = require("./providers/hover-provider");
 const tree_data_provider_1 = require("./providers/tree-data-provider");
-let acasConnection;
+let leoConnection;
 let activityMonitor;
 let aiAssistant;
 let workflowManager;
 function activate(context) {
-    console.log('ACAS Runner extension is now active!');
+    console.log('leo Runner extension is now active!');
     // Initialize core services
-    acasConnection = new acas_connection_1.ACASConnection();
-    activityMonitor = new activity_monitor_1.ActivityMonitor(acasConnection);
-    aiAssistant = new ai_assistant_1.AIAssistant(acasConnection);
-    workflowManager = new workflow_manager_1.WorkflowManager(acasConnection);
+    leoConnection = new leo_connection_1.leoConnection();
+    activityMonitor = new activity_monitor_1.ActivityMonitor(leoConnection);
+    aiAssistant = new ai_assistant_1.AIAssistant(leoConnection);
+    workflowManager = new workflow_manager_1.WorkflowManager(leoConnection);
     // Register commands
     registerCommands(context);
     // Register providers
     registerProviders(context);
     // Setup auto-connect if enabled
-    const config = vscode.workspace.getConfiguration('acas');
+    const config = vscode.workspace.getConfiguration('leo');
     if (config.get('autoConnect')) {
-        acasConnection.connect();
+        leoConnection.connect();
     }
     // Start activity monitoring if enabled
     if (config.get('monitorActivity')) {
         activityMonitor.start();
     }
     // Set initial context
-    vscode.commands.executeCommand('setContext', 'acas:connected', false);
+    vscode.commands.executeCommand('setContext', 'leo:connected', false);
 }
 function registerCommands(context) {
     // Connection commands
-    let connectCommand = vscode.commands.registerCommand('acas.connect', async () => {
+    let connectCommand = vscode.commands.registerCommand('leo.connect', async () => {
         try {
-            await acasConnection.connect();
-            vscode.window.showInformationMessage('Connected to ACAS Runner');
-            vscode.commands.executeCommand('setContext', 'acas:connected', true);
+            await leoConnection.connect();
+            vscode.window.showInformationMessage('Connected to leo Runner');
+            vscode.commands.executeCommand('setContext', 'leo:connected', true);
         }
         catch (error) {
-            vscode.window.showErrorMessage(`Failed to connect to ACAS Runner: ${error}`);
+            vscode.window.showErrorMessage(`Failed to connect to leo Runner: ${error}`);
         }
     });
-    let disconnectCommand = vscode.commands.registerCommand('acas.disconnect', async () => {
+    let disconnectCommand = vscode.commands.registerCommand('leo.disconnect', async () => {
         try {
-            await acasConnection.disconnect();
-            vscode.window.showInformationMessage('Disconnected from ACAS Runner');
-            vscode.commands.executeCommand('setContext', 'acas:connected', false);
+            await leoConnection.disconnect();
+            vscode.window.showInformationMessage('Disconnected from leo Runner');
+            vscode.commands.executeCommand('setContext', 'leo:connected', false);
         }
         catch (error) {
             vscode.window.showErrorMessage(`Failed to disconnect: ${error}`);
         }
     });
     // Dashboard command
-    let openDashboardCommand = vscode.commands.registerCommand('acas.openDashboard', () => {
-        const config = vscode.workspace.getConfiguration('acas');
+    let openDashboardCommand = vscode.commands.registerCommand('leo.openDashboard', () => {
+        const config = vscode.workspace.getConfiguration('leo');
         const serverUrl = config.get('serverUrl');
         vscode.env.openExternal(vscode.Uri.parse(serverUrl));
     });
     // AI commands
-    let askAICommand = vscode.commands.registerCommand('acas.askAI', async () => {
+    let askAICommand = vscode.commands.registerCommand('leo.askAI', async () => {
         const question = await vscode.window.showInputBox({
             prompt: 'What would you like to ask the AI assistant?',
             placeHolder: 'e.g., How can I optimize this function?'
@@ -114,7 +114,7 @@ function registerCommands(context) {
             }
         }
     });
-    let analyzeCodeCommand = vscode.commands.registerCommand('acas.analyzeCode', async () => {
+    let analyzeCodeCommand = vscode.commands.registerCommand('leo.analyzeCode', async () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             vscode.window.showWarningMessage('No active editor found');
@@ -131,7 +131,7 @@ function registerCommands(context) {
         }
     });
     // Workflow commands
-    let runWorkflowCommand = vscode.commands.registerCommand('acas.runWorkflow', async () => {
+    let runWorkflowCommand = vscode.commands.registerCommand('leo.runWorkflow', async () => {
         try {
             const workflows = await workflowManager.getAvailableWorkflows();
             const selected = await vscode.window.showQuickPick(workflows.map(w => ({ label: w.name, description: w.description, id: w.id })), { placeHolder: 'Select a workflow to run' });
@@ -145,7 +145,7 @@ function registerCommands(context) {
         }
     });
     // Activity command
-    let showActivityCommand = vscode.commands.registerCommand('acas.showActivity', () => {
+    let showActivityCommand = vscode.commands.registerCommand('leo.showActivity', () => {
         activityMonitor.showActivityPanel();
     });
     // Register all commands
@@ -155,7 +155,7 @@ function registerCommands(context) {
 }
 function registerProviders(context) {
     // Register completion provider for supported languages
-    const completionProvider = new completion_provider_1.ACASCompletionProvider(aiAssistant);
+    const completionProvider = new completion_provider_1.leoCompletionProvider(aiAssistant);
     const supportedLanguages = ['typescript', 'javascript', 'python', 'java', 'cpp', 'c'];
     supportedLanguages.forEach(language => {
         const disposable = vscode.languages.registerCompletionItemProvider(language, completionProvider, '.' // Trigger on dot
@@ -163,21 +163,21 @@ function registerProviders(context) {
         context.subscriptions.push(disposable);
     });
     // Register hover provider
-    const hoverProvider = new hover_provider_1.ACASHoverProvider(aiAssistant);
+    const hoverProvider = new hover_provider_1.leoHoverProvider(aiAssistant);
     supportedLanguages.forEach(language => {
         const disposable = vscode.languages.registerHoverProvider(language, hoverProvider);
         context.subscriptions.push(disposable);
     });
     // Register tree data providers
-    const activityTreeProvider = new tree_data_provider_1.ACASActivityTreeDataProvider(acasConnection);
-    const workflowTreeProvider = new tree_data_provider_1.ACASWorkflowTreeDataProvider(acasConnection);
-    vscode.window.registerTreeDataProvider('acasActivityView', activityTreeProvider);
-    vscode.window.registerTreeDataProvider('acasWorkflowsView', workflowTreeProvider);
+    const activityTreeProvider = new tree_data_provider_1.leoActivityTreeDataProvider(leoConnection);
+    const workflowTreeProvider = new tree_data_provider_1.leoWorkflowTreeDataProvider(leoConnection);
+    vscode.window.registerTreeDataProvider('leoActivityView', activityTreeProvider);
+    vscode.window.registerTreeDataProvider('leoWorkflowsView', workflowTreeProvider);
     // Register refresh commands for tree views
-    const refreshActivityCommand = vscode.commands.registerCommand('acas.refreshActivity', () => {
+    const refreshActivityCommand = vscode.commands.registerCommand('leo.refreshActivity', () => {
         activityTreeProvider.refresh();
     });
-    const refreshWorkflowsCommand = vscode.commands.registerCommand('acas.refreshWorkflows', () => {
+    const refreshWorkflowsCommand = vscode.commands.registerCommand('leo.refreshWorkflows', () => {
         workflowTreeProvider.refresh();
     });
     context.subscriptions.push(refreshActivityCommand, refreshWorkflowsCommand);
@@ -208,7 +208,7 @@ function setupEventListeners(context) {
     context.subscriptions.push(fileWatcher);
 }
 function showAnalysisResult(analysis) {
-    const panel = vscode.window.createWebviewPanel('acasAnalysis', 'ACAS Code Analysis', vscode.ViewColumn.Beside, {
+    const panel = vscode.window.createWebviewPanel('leoAnalysis', 'leo Code Analysis', vscode.ViewColumn.Beside, {
         enableScripts: true,
         retainContextWhenHidden: true
     });
@@ -221,7 +221,7 @@ function getAnalysisWebviewContent(analysis) {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>ACAS Code Analysis</title>
+            <title>leo Code Analysis</title>
             <style>
                 body {
                     font-family: var(--vscode-font-family);
@@ -276,8 +276,8 @@ function getAnalysisWebviewContent(analysis) {
     `;
 }
 function deactivate() {
-    if (acasConnection) {
-        acasConnection.disconnect();
+    if (leoConnection) {
+        leoConnection.disconnect();
     }
     if (activityMonitor) {
         activityMonitor.stop();

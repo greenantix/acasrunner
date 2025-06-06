@@ -36,18 +36,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ACASConnection = void 0;
+exports.leoConnection = void 0;
 const vscode = __importStar(require("vscode"));
 const ws_1 = __importDefault(require("ws"));
 const axios_1 = __importDefault(require("axios"));
-class ACASConnection {
+class leoConnection {
     constructor() {
         this.ws = null;
         this.isConnected = false;
         this.reconnectInterval = null;
         this.eventEmitter = new vscode.EventEmitter();
         this.onMessage = this.eventEmitter.event;
-        const config = vscode.workspace.getConfiguration('acas');
+        const config = vscode.workspace.getConfiguration('leo');
         this.serverUrl = config.get('serverUrl');
     }
     async connect() {
@@ -66,7 +66,7 @@ class ACASConnection {
                     return;
                 }
                 this.ws.on('open', () => {
-                    console.log('Connected to ACAS Runner');
+                    console.log('Connected to leo Runner');
                     this.isConnected = true;
                     this.startHeartbeat();
                     resolve();
@@ -81,7 +81,7 @@ class ACASConnection {
                     }
                 });
                 this.ws.on('close', () => {
-                    console.log('Disconnected from ACAS Runner');
+                    console.log('Disconnected from leo Runner');
                     this.isConnected = false;
                     this.scheduleReconnect();
                 });
@@ -98,7 +98,7 @@ class ACASConnection {
             });
         }
         catch (error) {
-            throw new Error(`Failed to connect to ACAS Runner: ${error}`);
+            throw new Error(`Failed to connect to leo Runner: ${error}`);
         }
     }
     async disconnect() {
@@ -122,7 +122,7 @@ class ACASConnection {
             }
         }
         catch (error) {
-            throw new Error(`Cannot reach ACAS Runner at ${this.serverUrl}`);
+            throw new Error(`Cannot reach leo Runner at ${this.serverUrl}`);
         }
     }
     startHeartbeat() {
@@ -175,7 +175,7 @@ class ACASConnection {
             this.ws.send(JSON.stringify(message));
         }
         else {
-            console.warn('Cannot send message: not connected to ACAS Runner');
+            console.warn('Cannot send message: not connected to leo Runner');
         }
     }
     async sendHTTP(endpoint, data) {
@@ -197,5 +197,5 @@ class ACASConnection {
         return this.serverUrl;
     }
 }
-exports.ACASConnection = ACASConnection;
-//# sourceMappingURL=acas-connection.js.map
+exports.leoConnection = leoConnection;
+//# sourceMappingURL=leo-connection.js.map

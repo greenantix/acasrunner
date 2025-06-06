@@ -36,10 +36,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ActivityMonitor = void 0;
 const vscode = __importStar(require("vscode"));
 class ActivityMonitor {
-    constructor(acasConnection) {
+    constructor(leoConnection) {
         this.isMonitoring = false;
         this.activityPanel = null;
-        this.acasConnection = acasConnection;
+        this.leoConnection = leoConnection;
     }
     start() {
         if (this.isMonitoring) {
@@ -151,7 +151,7 @@ class ActivityMonitor {
             this.activityPanel.reveal();
             return;
         }
-        this.activityPanel = vscode.window.createWebviewPanel('acasActivity', 'ACAS Activity Monitor', vscode.ViewColumn.Beside, {
+        this.activityPanel = vscode.window.createWebviewPanel('leoActivity', 'leo Activity Monitor', vscode.ViewColumn.Beside, {
             enableScripts: true,
             retainContextWhenHidden: true
         });
@@ -160,7 +160,7 @@ class ActivityMonitor {
             this.activityPanel = null;
         });
         // Listen for activity updates
-        this.acasConnection.onMessage(event => {
+        this.leoConnection.onMessage(event => {
             if (event.type === 'activity' && this.activityPanel) {
                 this.activityPanel.webview.postMessage({
                     type: 'activity_update',
@@ -175,7 +175,7 @@ class ActivityMonitor {
             timestamp: new Date(),
             ...activity
         };
-        this.acasConnection.send({
+        this.leoConnection.send({
             type: 'activity',
             data: activityEvent
         });
@@ -207,7 +207,7 @@ class ActivityMonitor {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>ACAS Activity Monitor</title>
+                <title>leo Activity Monitor</title>
                 <style>
                     body {
                         font-family: var(--vscode-font-family);
@@ -257,7 +257,7 @@ class ActivityMonitor {
                 </style>
             </head>
             <body>
-                <h1>🔍 ACAS Activity Monitor</h1>
+                <h1>🔍 leo Activity Monitor</h1>
                 <div id="activities">
                     <p>Waiting for activity data...</p>
                 </div>

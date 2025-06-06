@@ -50,7 +50,7 @@ const mockSessions: ChatSession[] = [
     id: "session-3",
     title: "Plugin Development Help",
     timestamp: new Date(2024, 6, 22, 9, 0, 0),
-    summary: "Asked about creating a custom plugin for ACAS Runner, focusing on file system access.",
+    summary: "Asked about creating a custom plugin for leo Runner, focusing on file system access.",
     messageCount: 3,
     content: [
       { sender: "user", text: "How can I make a plugin that reads files?" },

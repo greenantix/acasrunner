@@ -4,7 +4,7 @@ const AIAssistantPlugin: Plugin = {
   name: 'AI Code Assistant',
   id: 'ai-assistant',
   version: '1.0.0',
-  author: 'ACAS Team',
+  author: 'leo Team',
   description: 'Provides AI-powered code suggestions and error analysis',
   icon: '🤖',
   permissions: [
@@ -123,3 +123,4 @@ const AIAssistantPlugin: Plugin = {
 };
 
 export default AIAssistantPlugin;
+

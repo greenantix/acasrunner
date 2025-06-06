@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { AIAssistant } from '../ai/ai-assistant';
 
-export class ACASCompletionProvider implements vscode.CompletionItemProvider {
+export class leoCompletionProvider implements vscode.CompletionItemProvider {
     private aiAssistant: AIAssistant;
 
     constructor(aiAssistant: AIAssistant) {
@@ -15,7 +15,7 @@ export class ACASCompletionProvider implements vscode.CompletionItemProvider {
         context: vscode.CompletionContext
     ): Promise<vscode.CompletionItem[]> {
         // Only provide completions if configured to do so
-        const config = vscode.workspace.getConfiguration('acas');
+        const config = vscode.workspace.getConfiguration('leo');
         if (!config.get('showInlineHints')) {
             return [];
         }
@@ -24,7 +24,7 @@ export class ACASCompletionProvider implements vscode.CompletionItemProvider {
             const completions = await this.aiAssistant.provideCodeCompletion(document, position);
             return completions;
         } catch (error) {
-            console.error('ACAS completion provider error:', error);
+            console.error('leo completion provider error:', error);
             return [];
         }
     }

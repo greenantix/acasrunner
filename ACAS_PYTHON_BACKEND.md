@@ -1,6 +1,6 @@
-# ACAS Python Backend Implementation
+# leo Python Backend Implementation
 
-This document describes the complete Python FastAPI backend implementation for the AI Coding Assistant System (ACAS) that integrates with the existing TypeScript/Next.js frontend and Firebase infrastructure.
+This document describes the complete Python FastAPI backend implementation for the AI Coding Assistant System (leo) that integrates with the existing TypeScript/Next.js frontend and Firebase infrastructure.
 
 ## 🏗️ Architecture Overview
 
@@ -80,7 +80,7 @@ nano .env
 
 ```bash
 # Using the startup script (recommended)
-python run_acas.py
+python run_leo.py
 
 # Or directly with uvicorn
 uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
@@ -147,7 +147,7 @@ leo_service = LeoGatekeeperService()
 decision = await leo_service.evaluate_code_operation(
     operation_type="index code file",
     file_path="src/api/auth.ts",
-    details={"file_type": "typescript", "project_name": "ACAS"}
+    details={"file_type": "typescript", "project_name": "leo"}
 )
 
 # Detect struggle patterns
@@ -407,10 +407,10 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY src/ src/
-COPY run_acas.py .
+COPY run_leo.py .
 
 EXPOSE 8000
-CMD ["python", "run_acas.py"]
+CMD ["python", "run_leo.py"]
 ```
 
 ### Production Checklist
@@ -432,13 +432,13 @@ The extension should call Python backend endpoints:
 
 ```typescript
 // In VS Code extension
-const acasBackend = 'http://localhost:8000';
+const leoBackend = 'http://localhost:8000';
 
 async function indexCurrentFile() {
   const content = vscode.window.activeTextEditor?.document.getText();
   const language = vscode.window.activeTextEditor?.document.languageId;
   
-  await fetch(`${acasBackend}/api/code/index`, {
+  await fetch(`${leoBackend}/api/code/index`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${firebaseToken}`,
@@ -520,10 +520,10 @@ export async function POST(request: Request) {
 
 ```bash
 # Run with debug logging
-ENVIRONMENT=development LOG_LEVEL=DEBUG python run_acas.py
+ENVIRONMENT=development LOG_LEVEL=DEBUG python run_leo.py
 
 # Check specific service
 python -c "from src.services.vector_service import VectorService; VectorService()"
 ```
 
-This implementation provides a complete, production-ready Python backend that seamlessly integrates with your existing ACAS infrastructure while adding powerful AI capabilities through local models and cloud services.
+This implementation provides a complete, production-ready Python backend that seamlessly integrates with your existing leo infrastructure while adding powerful AI capabilities through local models and cloud services.

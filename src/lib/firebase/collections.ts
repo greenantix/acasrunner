@@ -110,7 +110,7 @@ export interface PluginDoc {
   dependencies?: string[];
   engines?: {
     node?: string;
-    acas?: string;
+    leo?: string;
   };
   keywords?: string[];
   repository?: {

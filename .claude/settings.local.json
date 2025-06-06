@@ -14,8 +14,11 @@
       "Bash(npm run compile:*)",
       "Bash(rg:*)",
       "Bash(pkill:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }
 }
+

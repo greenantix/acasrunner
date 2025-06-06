@@ -43,3 +43,4 @@ if (analysis.aiIntegration.providers.length > 2) {
 
 console.log('\\n📊 Analysis saved to:', outputPath);
 console.log('\\n🎯 Claude Code is ready to supercharge this project!');
+

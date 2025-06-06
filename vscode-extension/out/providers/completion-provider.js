@@ -33,15 +33,15 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ACASCompletionProvider = void 0;
+exports.leoCompletionProvider = void 0;
 const vscode = __importStar(require("vscode"));
-class ACASCompletionProvider {
+class leoCompletionProvider {
     constructor(aiAssistant) {
         this.aiAssistant = aiAssistant;
     }
     async provideCompletionItems(document, position, token, context) {
         // Only provide completions if configured to do so
-        const config = vscode.workspace.getConfiguration('acas');
+        const config = vscode.workspace.getConfiguration('leo');
         if (!config.get('showInlineHints')) {
             return [];
         }
@@ -50,7 +50,7 @@ class ACASCompletionProvider {
             return completions;
         }
         catch (error) {
-            console.error('ACAS completion provider error:', error);
+            console.error('leo completion provider error:', error);
             return [];
         }
     }
@@ -59,5 +59,5 @@ class ACASCompletionProvider {
         return item;
     }
 }
-exports.ACASCompletionProvider = ACASCompletionProvider;
+exports.leoCompletionProvider = leoCompletionProvider;
 //# sourceMappingURL=completion-provider.js.map
