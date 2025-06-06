@@ -3,6 +3,7 @@ import { getSQLiteVecService } from './vector-storage';
 import { getVectorStorageConfigService } from './vector-storage/config-service';
 import { registerClaudeCodePlugin } from '../plugins/claude-code/register';
 import { pluginRegistry } from './plugin-system/plugin-registry';
+import { DataRetentionService } from './data-retention';
 
 export interface StartupStatus {
   initialized: boolean;
@@ -11,6 +12,7 @@ export interface StartupStatus {
     vector_storage: boolean;
     configuration: boolean;
     plugins: boolean;
+    data_retention: boolean;
   };
   errors: string[];
   timestamp: string;
@@ -18,6 +20,7 @@ export interface StartupStatus {
 
 export class StartupService {
   private static instance: StartupService | null = null;
+  private static dataRetentionService: DataRetentionService | null = null;
   private initializationPromise: Promise<StartupStatus> | null = null;
   private status: StartupStatus = {
     initialized: false,
@@ -25,7 +28,8 @@ export class StartupService {
       database_migrations: false,
       vector_storage: false,
       configuration: false,
-      plugins: false
+      plugins: false,
+      data_retention: false
     },
     errors: [],
     timestamp: new Date().toISOString()
@@ -61,7 +65,8 @@ export class StartupService {
       database_migrations: false,
       vector_storage: false,
       configuration: false,
-      plugins: false
+      plugins: false,
+      data_retention: false
     };
 
     try {
@@ -121,6 +126,21 @@ export class StartupService {
       console.log('✅ Plugins initialized');
     } catch (error) {
       const errorMsg = `Plugin initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      errors.push(errorMsg);
+      console.error('❌', errorMsg);
+    }
+
+    try {
+      // 5. Initialize data retention service
+      console.log('🗂️ Initializing data retention service...');
+      if (!StartupService.dataRetentionService) {
+        StartupService.dataRetentionService = new DataRetentionService();
+      }
+      await StartupService.dataRetentionService.initialize();
+      services.data_retention = true;
+      console.log('✅ Data retention service initialized (Firebase cleanup jobs active)');
+    } catch (error) {
+      const errorMsg = `Data retention initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
       errors.push(errorMsg);
       console.error('❌', errorMsg);
     }
@@ -233,11 +253,21 @@ export class StartupService {
       details
     };
   }
+
+  // Get the data retention service instance
+  static getDataRetentionService(): DataRetentionService | null {
+    return StartupService.dataRetentionService;
+  }
 }
 
 // Singleton access
 export function getStartupService(): StartupService {
   return StartupService.getInstance();
+}
+
+// Get data retention service
+export function getDataRetentionService(): DataRetentionService | null {
+  return StartupService.getDataRetentionService();
 }
 
 // Auto-initialize on import (for server-side initialization)
