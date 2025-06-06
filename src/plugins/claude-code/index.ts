@@ -363,6 +363,67 @@ export class ClaudeCodePlugin implements Plugin {
         this.handleSecurityVulnerabilities(healthReport.securityVulnerabilities);
       }
     });
+
+    // Crash Recovery event handlers
+    this.crashRecovery.on('crash-detected', (crashInfo) => {
+      const activityEvent: ActivityEvent = {
+        id: `crash-detected-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'error',
+        source: 'claude-code-plugin',
+        message: `System crash detected: ${crashInfo.event.type}`,
+        details: {
+          severity: 'critical'
+        },
+        metadata: { crashInfo }
+      };
+      this.onActivity(activityEvent);
+    });
+
+    this.crashRecovery.on('session-restored', (restoreInfo) => {
+      const activityEvent: ActivityEvent = {
+        id: `session-restored-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'plugin_event',
+        source: 'claude-code-plugin',
+        message: `Session restored from crash: ${restoreInfo.sessionId}`,
+        details: {
+          severity: 'low'
+        },
+        metadata: { restoreInfo }
+      };
+      this.onActivity(activityEvent);
+    });
+
+    this.crashRecovery.on('smart-restart', (restartInfo) => {
+      const activityEvent: ActivityEvent = {
+        id: `smart-restart-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'plugin_event',
+        source: 'claude-code-plugin',
+        message: `Smart restart completed for session: ${restartInfo.sessionId}`,
+        details: {
+          severity: 'low'
+        },
+        metadata: { restartInfo }
+      };
+      this.onActivity(activityEvent);
+    });
+
+    this.crashRecovery.on('recovery-data-found', (recoveryData) => {
+      const activityEvent: ActivityEvent = {
+        id: `recovery-data-found-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'plugin_event',
+        source: 'claude-code-plugin',
+        message: `Found ${recoveryData.count} recovery contexts from previous sessions`,
+        details: {
+          severity: 'low'
+        },
+        metadata: { recoveryData }
+      };
+      this.onActivity(activityEvent);
+    });
   }
 
   private async handleProcessEvent(event: ActivityEvent): Promise<void> {
@@ -563,7 +624,9 @@ export class ClaudeCodePlugin implements Plugin {
       taskVerification: await this.getVerificationStats(),
       activeTaskVerifications: this.getActiveVerifications().size,
       systemInfo: this.wslOptimizer.getSystemInfo(),
-      pathCacheStats: this.wslOptimizer.getPathCacheStats()
+      pathCacheStats: this.wslOptimizer.getPathCacheStats(),
+      crashRecovery: this.getCrashRecoveryStatus(),
+      availableRecoveries: (await this.listAvailableCrashRecoveries()).length
     };
 
     // Add struggle statistics if userId is provided
@@ -726,6 +789,118 @@ export class ClaudeCodePlugin implements Plugin {
     bySeverity: Record<string, number>;
   } {
     return this.driftDetector.getViolationStats();
+  }
+
+  // Crash Recovery public API
+  async startCrashRecoverySession(sessionId: string, task: TaskContext, userContext: UserContext): Promise<void> {
+    try {
+      await this.crashRecovery.startSession(sessionId, task, userContext);
+      console.log(`[Claude Code Plugin] ✅ Started crash recovery tracking for session: ${sessionId}`);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error starting crash recovery session:', error);
+      throw error;
+    }
+  }
+
+  async updateCrashRecoveryTask(taskUpdate: Partial<TaskContext>): Promise<void> {
+    try {
+      await this.crashRecovery.updateTask(taskUpdate);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error updating crash recovery task:', error);
+      throw error;
+    }
+  }
+
+  async addCrashRecoveryMessage(message: Message): Promise<void> {
+    try {
+      await this.crashRecovery.addMessage(message);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error adding crash recovery message:', error);
+      throw error;
+    }
+  }
+
+  async addCrashRecoveryFileSnapshot(filePath: string): Promise<void> {
+    try {
+      await this.crashRecovery.addFileSnapshot(filePath);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error adding crash recovery file snapshot:', error);
+      throw error;
+    }
+  }
+
+  async recordCrashRecoveryError(error: ErrorInfo): Promise<void> {
+    try {
+      await this.crashRecovery.recordError(error);
+      console.log(`[Claude Code Plugin] 💾 Recorded crash recovery error: ${error.type}`);
+    } catch (recoveryError) {
+      console.error('[Claude Code Plugin] Error recording crash recovery error:', recoveryError);
+      throw recoveryError;
+    }
+  }
+
+  async restoreFromCrash(sessionId: string): Promise<RestoreResult> {
+    try {
+      const result = await this.crashRecovery.restoreFromCrash(sessionId);
+      console.log(`[Claude Code Plugin] 🔄 Crash recovery result: ${result.success ? 'SUCCESS' : 'FAILED'}`);
+      return result;
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error restoring from crash:', error);
+      throw error;
+    }
+  }
+
+  async smartRestart(context: CrashContext): Promise<void> {
+    try {
+      await this.crashRecovery.smartRestart(context);
+      console.log(`[Claude Code Plugin] 🚀 Smart restart completed for session: ${context.sessionId}`);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error performing smart restart:', error);
+      throw error;
+    }
+  }
+
+  getCrashRecoveryStatus(): {
+    hasActiveSession: boolean;
+    sessionId?: string;
+    lastSave?: Date;
+    trackedFiles: number;
+    recoveryDataAvailable: boolean;
+  } {
+    return this.crashRecovery.getRecoveryStatus();
+  }
+
+  async listAvailableCrashRecoveries(): Promise<Array<{
+    sessionId: string;
+    timestamp: Date;
+    taskDescription: string;
+    fileCount: number;
+  }>> {
+    try {
+      return await this.crashRecovery.listAvailableRecoveries();
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error listing crash recoveries:', error);
+      return [];
+    }
+  }
+
+  async clearCrashRecoveryData(sessionId?: string): Promise<void> {
+    try {
+      await this.crashRecovery.clearRecoveryData(sessionId);
+      console.log(`[Claude Code Plugin] 🗑️ Cleared crash recovery data${sessionId ? ` for session: ${sessionId}` : ' (all sessions)'}`);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error clearing crash recovery data:', error);
+      throw error;
+    }
+  }
+
+  detectSystemCrash(event: SystemEvent): boolean {
+    try {
+      return this.crashRecovery.detectCrash(event);
+    } catch (error) {
+      console.error('[Claude Code Plugin] Error detecting system crash:', error);
+      return false;
+    }
   }
 }
 
