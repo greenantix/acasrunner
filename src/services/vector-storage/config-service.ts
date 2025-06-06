@@ -49,7 +49,7 @@ export class VectorStorageConfigService {
           '**/target/**'
         ],
         indexing_delay: settings.indexing_delay || 2000,
-        database_path: settings.database_path || './data/embeddings.db'
+        database_path: settings.database_path || './.genkit/chroma'
       };
 
       this.lastFetch = now;
@@ -132,7 +132,7 @@ export class VectorStorageConfigService {
         '**/target/**'
       ],
       indexing_delay: 2000,
-      database_path: './data/embeddings.db'
+      database_path: './.genkit/chroma' // Updated for ChromaDB
     };
   }
 
@@ -154,7 +154,7 @@ export class VectorStorageConfigService {
       indexing_file_patterns: 'File patterns to include in automatic indexing',
       indexing_exclude_patterns: 'File patterns to exclude from indexing',
       indexing_delay: 'Delay in milliseconds before indexing changed files',
-      database_path: 'Path to SQLite vector database file'
+      database_path: 'Path to ChromaDB vector database directory'
     };
 
     return descriptions[key] || `Configuration for ${key}`;

@@ -44,3 +44,36 @@ export interface IndexingOptions {
   include_patterns?: string[];
   exclude_patterns?: string[];
 }
+
+// ChromaDB-specific types
+export interface CodeEmbedding {
+  id: string;
+  content: string;
+  file_path: string;
+  language: string;
+  function_name?: string;
+  line_start: number;
+  line_end: number;
+  similarity: number;
+  created_at: Date;
+}
+
+export interface SearchResult {
+  id: string;
+  content: string;
+  file_path: string;
+  language: string;
+  function_name?: string;
+  line_start: number;
+  line_end: number;
+  similarity: number;
+  created_at: Date;
+}
+
+export interface VectorStats {
+  total_embeddings: number;
+  file_types: Record<string, number>;
+  languages: Record<string, number>;
+  functions: Record<string, number>;
+  last_updated: Date;
+}

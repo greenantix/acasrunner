@@ -1,7 +1,7 @@
 import { FirebaseCollections, COLLECTIONS } from '../firebase/collections';
 import { collection, doc, getDoc, setDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
-import { getSQLiteVecService } from '../../services/vector-storage';
+import { getChromaDBService } from '../../services/vector-storage';
 
 // Migration interface
 export interface Migration {
@@ -108,7 +108,7 @@ export class DatabaseMigrationService {
     this.addMigration({
       version: '2.0.0',
       name: 'vector_storage_system',
-      description: 'Initialize SQLite-vec database for code embeddings',
+      description: 'Initialize ChromaDB database for code embeddings',
       up: async () => {
         await this.initializeVectorStorage();
       },
@@ -436,18 +436,13 @@ export class DatabaseMigrationService {
   }
 
   private async initializeVectorStorage(): Promise<void> {
-    console.log('Initializing SQLite-vec vector storage system...');
+    console.log('Initializing ChromaDB vector storage system...');
     
     try {
-      const vectorService = getSQLiteVecService();
+      const vectorService = getChromaDBService();
       await vectorService.initialize();
       
-      // Set initial metadata
-      await vectorService.setMetadata('schema_version', '2.0.0');
-      await vectorService.setMetadata('initialized_at', new Date().toISOString());
-      await vectorService.setMetadata('migration_source', 'database_migration_2.0.0');
-      
-      console.log('✅ SQLite-vec database initialized successfully');
+      console.log('✅ ChromaDB database initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize vector storage:', error);
       throw error;
@@ -459,10 +454,9 @@ export class DatabaseMigrationService {
     // Note: In a real implementation, you might want to backup the database
     // before removing it or just mark it as inactive
     try {
-      const vectorService = getSQLiteVecService();
-      await vectorService.setMetadata('status', 'inactive');
-      await vectorService.setMetadata('rolled_back_at', new Date().toISOString());
-      console.log('✅ Vector storage marked as inactive');
+      const vectorService = getChromaDBService();
+      await vectorService.cleanup();
+      console.log('✅ Vector storage cleaned up');
     } catch (error) {
       console.error('❌ Failed to rollback vector storage:', error);
       throw error;

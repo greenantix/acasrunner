@@ -65,23 +65,9 @@ const generateDocumentationFlow = ai.defineFlow(
     outputSchema: GenerateDocumentationOutputSchema,
   },
   async (input: GenerateDocumentationInput) => {
-    // In a real scenario, you might fetch additional context here,
-    // e.g., from a version control system or task manager, or use structuredContext.
-    if (input.docType === "readme" && !input.projectName && !input.context.includes("leo Runner")) {
-        // Mocking a slightly more complex response for README if project name is missing from input
-        return {
-            generatedContent: `# Mock Project README\n\nThis is a mock README generated because no project name was provided.\n\n## Introduction\nThis project does amazing things.\n\n## Features\n- Feature 1\n- Feature 2\n\n## Getting Started\n\`\`\`bash\nnpm install mock-project\n\`\`\`\n`,
-            title: "Mock Project README"
-        };
-    }
-    
     const {output} = await prompt(input);
     if (!output) {
-        // Fallback mock response if AI fails or returns nothing
-        return {
-            generatedContent: `# Mock ${input.docType}\n\nThis is a fallback mock ${input.docType} generated due to an AI processing issue.\n\nContext provided:\n${input.context}\n`,
-            title: input.title || `Mock ${input.docType}`
-        }
+        throw new Error('Failed to generate documentation - AI service unavailable');
     }
     // Ensure title is set if it's a docs_page and AI didn't provide one or input didn't have one
     if (input.docType === 'docs_page' && !output.title && !input.title) {

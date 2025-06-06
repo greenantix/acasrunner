@@ -61,36 +61,15 @@ const suggestCodeFixesFlow = ai.defineFlow(
     outputSchema: SuggestCodeFixesOutputSchema,
   },
   async (input: SuggestCodeFixesInput) => {
-    // Mocking a specific common error for better demo if it arises
-    if (input.error.toLowerCase().includes("cannot read properties of undefined") && input.fileContext.includes(".name")) {
-        const originalCode = input.fileContext.match(/const\s+\w+\s*=\s*\w+\.profile\.name;/)?.[0] || "const userName = user.profile.name;";
-        const suggested = originalCode.replace('.profile.name', '?.profile?.name');
-        return {
-            explanation: "The error is likely a TypeError because 'profile' might be undefined when accessing '.name'. Using optional chaining (?.) can prevent this.",
-            suggestedCode: suggested,
-            diff: `--- a/original.js
-+++ b/fixed.js
-@@ -1,1 +1,1 @@
--${originalCode}
-+${suggested}`,
-            confidenceScore: 0.90,
-            trace: ["Detected undefined property access", "Applied optional chaining pattern", "Generated diff"]
-        };
-    }
-    
     const {output} = await prompt(input);
 
     if (!output) {
-        return {
-            explanation: "Mock AI: I couldn't determine a specific fix. Please ensure all variables are initialized and check for typos.",
-            suggestedCode: "// No specific code change suggested, please review manually.",
-            trace: ["Received input", "AI processing failed", "Returned fallback"],
-            confidenceScore: 0.2
-        };
+        throw new Error('Failed to generate code fix suggestions - AI service unavailable');
     }
+    
     return {
         ...output,
-        trace: output.trace && output.trace.length > 0 ? output.trace : ["Analyzed input", "Generated code suggestion and explanation"] // Mock trace
+        trace: output.trace && output.trace.length > 0 ? output.trace : ["Analyzed input", "Generated code suggestion and explanation"]
     };
   }
 );

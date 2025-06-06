@@ -1,5 +1,5 @@
 import { getMigrationService } from '@/lib/database/migrations';
-import { getSQLiteVecService } from './vector-storage';
+import { getChromaDBService } from './vector-storage/chroma-service';
 import { getVectorStorageConfigService } from './vector-storage/config-service';
 import { registerClaudeCodePlugin } from '../plugins/claude-code/register';
 import { pluginRegistry } from './plugin-system/plugin-registry';
@@ -102,18 +102,18 @@ export class StartupService {
     }
 
     try {
-      // 3. Initialize SQLite-vec service
-      console.log('🗄️ Initializing vector storage...');
-      const vectorService = getSQLiteVecService();
+      // 3. Initialize ChromaDB service
+      console.log('🗄️ Initializing ChromaDB vector storage...');
+      const vectorService = getChromaDBService();
       await vectorService.initialize();
       services.vector_storage = true;
-      console.log('✅ Vector storage initialized');
+      console.log('✅ ChromaDB vector storage initialized');
 
       // Get initial stats
       const stats = await vectorService.getStats();
-      console.log(`📊 Vector database stats: ${stats.total_embeddings} embeddings across ${Object.keys(stats.languages).length} languages`);
+      console.log(`📊 ChromaDB stats: ${stats.total_embeddings} embeddings, collection: ${vectorService.getCollectionInfo().name}`);
     } catch (error) {
-      const errorMsg = `Vector storage initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      const errorMsg = `ChromaDB initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
       errors.push(errorMsg);
       console.error('❌', errorMsg);
     }
@@ -189,13 +189,15 @@ export class StartupService {
 
     try {
       // Check vector storage
-      const vectorService = getSQLiteVecService();
+      const vectorService = getChromaDBService();
       const stats = await vectorService.getStats();
-      serviceHealth.vector_storage = true;
+      const collectionInfo = vectorService.getCollectionInfo();
+      serviceHealth.vector_storage = vectorService.isAvailable();
       details.vector_storage = {
         total_embeddings: stats.total_embeddings,
-        file_types: Object.keys(stats.file_types).length,
-        languages: Object.keys(stats.languages).length
+        collection_name: collectionInfo.name,
+        initialized: collectionInfo.isInitialized,
+        path: collectionInfo.path
       };
     } catch (error) {
       serviceHealth.vector_storage = false;
