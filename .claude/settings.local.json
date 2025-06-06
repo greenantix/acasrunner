@@ -18,7 +18,9 @@
       "Bash(npm uninstall:*)",
       "Bash(node:*)",
       "Bash(git add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(ls:*)",
+      "Bash(git reset:*)"
     ],
     "deny": []
   }

@@ -1,4 +1,4 @@
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/config';
 import {
   ChatAttachment,
   ChatMessage,
@@ -27,6 +27,24 @@ export class ChatService {
   private readonly SESSIONS_COLLECTION = 'chat_sessions';
   private readonly MESSAGES_COLLECTION = 'chat_messages';
   private readonly ATTACHMENTS_COLLECTION = 'chat_attachments';
+
+  private isFirebaseAvailable(): boolean {
+    return db !== null && db !== undefined;
+  }
+
+  private async handleFirebaseOperation<T>(operation: () => Promise<T>, fallback: T): Promise<T> {
+    if (!this.isFirebaseAvailable()) {
+      console.warn('[Chat Service] Firebase not available, using fallback');
+      return fallback;
+    }
+    
+    try {
+      return await operation();
+    } catch (error) {
+      console.error('[Chat Service] Firebase operation failed:', error);
+      return fallback;
+    }
+  }
 
   // Session Management
   async createSession(
@@ -134,7 +152,7 @@ export class ChatService {
   }
 
   async listSessions(filters?: SessionFilters): Promise<ChatSessionSummary[]> {
-    try {
+    return await this.handleFirebaseOperation(async () => {
       let q = query(collection(db, this.SESSIONS_COLLECTION), orderBy('lastUpdated', 'desc'));
 
       if (filters?.provider) {
@@ -178,10 +196,7 @@ export class ChatService {
       }
 
       return sessions;
-    } catch (error) {
-      console.error('Error listing sessions:', error);
-      return [];
-    }
+    }, []); // Return empty array as fallback
   }
 
   // Message Management

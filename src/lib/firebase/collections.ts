@@ -18,7 +18,7 @@ import {
   Query,
   DocumentReference
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from './config';
 
 // Collection names
 export const COLLECTIONS = {
@@ -188,17 +188,41 @@ export interface SettingsDoc {
 // Collection utilities
 export class FirebaseCollections {
   
+  // Check if Firebase is available
+  private static isFirebaseAvailable(): boolean {
+    return db !== null && db !== undefined;
+  }
+
+  private static async handleFirebaseOperation<T>(operation: () => Promise<T>): Promise<T | null> {
+    if (!this.isFirebaseAvailable()) {
+      console.warn('[Firebase] Operation skipped - Firebase not available');
+      return null;
+    }
+    
+    try {
+      return await operation();
+    } catch (error) {
+      console.error('[Firebase] Operation failed:', error);
+      throw error;
+    }
+  }
+
   // Activities
   static getActivitiesCollection() {
+    if (!this.isFirebaseAvailable()) {
+      throw new Error('Firebase not available');
+    }
     return collection(db, COLLECTIONS.ACTIVITIES);
   }
 
   static async addActivity(activity: Omit<ActivityEventDoc, 'id' | 'timestamp'>): Promise<string> {
-    const docRef = await addDoc(this.getActivitiesCollection(), {
-      ...activity,
-      timestamp: serverTimestamp()
-    });
-    return docRef.id;
+    return await this.handleFirebaseOperation(async () => {
+      const docRef = await addDoc(this.getActivitiesCollection(), {
+        ...activity,
+        timestamp: serverTimestamp()
+      });
+      return docRef.id;
+    }) || 'mock-activity-id';
   }
 
   static async getActivities(filters?: {
@@ -473,42 +497,46 @@ export class FirebaseCollections {
   }
 
   static async getSetting(category: string, key: string): Promise<SettingsDoc | null> {
-    const q = query(
-      this.getSettingsCollection(),
-      where('category', '==', category),
-      where('key', '==', key),
-      limitQuery(1)
-    );
-    
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty) {
-      const doc = snapshot.docs[0];
-      return {
-        id: doc.id,
-        ...doc.data()
-      } as SettingsDoc;
-    }
-    
-    return null;
+    return await this.handleFirebaseOperation(async () => {
+      const q = query(
+        this.getSettingsCollection(),
+        where('category', '==', category),
+        where('key', '==', key),
+        limitQuery(1)
+      );
+      
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        return {
+          id: doc.id,
+          ...doc.data()
+        } as SettingsDoc;
+      }
+      
+      return null;
+    });
   }
 
   static async setSetting(setting: Omit<SettingsDoc, 'id' | 'updatedAt'>): Promise<string> {
-    // Check if setting already exists
-    const existing = await this.getSetting(setting.category, setting.key);
-    
-    if (existing) {
-      await updateDoc(doc(db, COLLECTIONS.SETTINGS, existing.id), {
-        ...setting,
-        updatedAt: serverTimestamp()
-      });
-      return existing.id;
-    } else {
-      const docRef = await addDoc(this.getSettingsCollection(), {
-        ...setting,
-        updatedAt: serverTimestamp()
-      });
-      return docRef.id;
-    }
+    return await this.handleFirebaseOperation(async () => {
+      // Check if setting already exists
+      const existing = await this.getSetting(setting.category, setting.key);
+      
+      if (existing) {
+        await updateDoc(doc(db, COLLECTIONS.SETTINGS, existing.id), {
+          ...setting,
+          updatedAt: serverTimestamp()
+        });
+        return existing.id;
+      } else {
+        const docRef = await addDoc(this.getSettingsCollection(), {
+          ...setting,
+          updatedAt: serverTimestamp()
+        });
+        return docRef.id;
+      }
+    }) || 'mock-setting-id';
   }
 
   // Real-time subscriptions
