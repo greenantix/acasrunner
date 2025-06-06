@@ -57,19 +57,18 @@ const escalateCodingProblemFlow = ai.defineFlow(
     // For now, it directly calls the prompt.
     const {output} = await escalateCodingProblemPrompt(input);
     
-    // Mocking the trace if AI doesn't provide it or for simplicity
     if (!output) {
         return {
-            explanation: "Mock AI: I was unable to determine the cause of the error from the provided information. Please ensure the error message and context are as complete as possible.",
+            explanation: "Unable to determine the cause of the error from the provided information. Please ensure the error message and context are as complete as possible.",
             severity: "medium" as const,
-            trace: ["Received input", "AI processing failed to generate output", "Returned mock fallback"]
+            trace: ["Received input", "AI processing failed to generate output", "Returned fallback response"]
         }
     }
     
     return {
         explanation: output.explanation,
-        severity: (output.severity as "low" | "medium" | "high") || "medium", // Default severity if not provided
-        trace: output.trace && output.trace.length > 0 ? output.trace : ["Analyzed input", "Generated explanation and severity"], // Mock trace
+        severity: (output.severity as "low" | "medium" | "high") || "medium",
+        trace: output.trace && output.trace.length > 0 ? output.trace : ["Analyzed input", "Generated explanation and severity"],
     };
   }
 );
