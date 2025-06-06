@@ -16,9 +16,10 @@
       "Bash(pkill:*)",
       "Bash(rm:*)",
       "Bash(npm uninstall:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }
 }
-

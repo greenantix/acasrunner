@@ -7,6 +7,7 @@ import { StruggleManager } from './struggle-settings';
 import { ClaudeCodeMonitor, TaskRequest, TaskVerification } from './monitor';
 import { WSLOptimizer, SystemInfo, WSLPathMapping, TurboPromptEnhancement } from './wsl-optimizer';
 import { DriftDetector, ImportViolation, DriftAction, HealthReport, FixRecommendation, PackageJson } from './drift-detector';
+import { CrashRecoveryManager, CrashContext, TaskContext, FileSnapshot, Message, ErrorInfo, RestoreResult } from './crash-recovery';
 
 export class ClaudeCodePlugin implements Plugin {
   id = 'claude-code';
@@ -55,6 +56,7 @@ export class ClaudeCodePlugin implements Plugin {
   private taskMonitor: ClaudeCodeMonitor;
   private wslOptimizer: WSLOptimizer;
   private driftDetector: DriftDetector;
+  private crashRecovery: CrashRecoveryManager;
   private isActive = false;
   private api?: PluginAPI;
 
@@ -67,6 +69,7 @@ export class ClaudeCodePlugin implements Plugin {
     this.taskMonitor = new ClaudeCodeMonitor();
     this.wslOptimizer = new WSLOptimizer();
     this.driftDetector = new DriftDetector();
+    this.crashRecovery = new CrashRecoveryManager();
   }
 
   async onLoad(api: PluginAPI): Promise<void> {
@@ -101,13 +104,14 @@ export class ClaudeCodePlugin implements Plugin {
     await this.taskMonitor.initialize();
     await this.wslOptimizer.initialize();
     await this.driftDetector.initialize();
+    await this.crashRecovery.initialize();
 
     this.setupEventHandlers();
     this.isActive = true;
     
     const systemInfo = this.wslOptimizer.getSystemInfo();
     const envType = systemInfo?.isWSL ? `WSL (${systemInfo.wslDistro})` : 'Native Linux';
-    console.log(`[Claude Code Plugin] ✅ Initialized successfully with task verification, struggle settings, drift detection, and system optimization for ${envType}`);
+    console.log(`[Claude Code Plugin] ✅ Complete initialization: task verification, struggle settings, drift detection, crash recovery, and system optimization for ${envType}`);
   }
 
   async cleanup(): Promise<void> {
@@ -123,6 +127,7 @@ export class ClaudeCodePlugin implements Plugin {
     await this.taskMonitor.cleanup();
     await this.wslOptimizer.cleanup();
     await this.driftDetector.cleanup();
+    await this.crashRecovery.cleanup();
     
     console.log('[Claude Code Plugin] Cleaned up successfully');
   }
