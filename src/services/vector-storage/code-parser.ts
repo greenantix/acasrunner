@@ -1,8 +1,7 @@
-import Parser from 'tree-sitter';
-import TypeScript from 'tree-sitter-typescript';
-import JavaScript from 'tree-sitter-javascript';
-import Python from 'tree-sitter-python';
 import path from 'path';
+import { parser as javascriptParser } from '@lezer/javascript';
+import { SyntaxNode, Tree, TreeCursor } from '@lezer/common';
+import { LezerCodeParser } from './lezer-parser';
 
 export interface CodeChunk {
   id: string;
@@ -24,9 +23,11 @@ export interface CodeChunk {
 
 export class CodeParser {
   private parsers: Map<string, Parser> = new Map();
+  private lezerParser: LezerCodeParser;
 
   constructor() {
     this.initializeParsers();
+    this.lezerParser = new LezerCodeParser();
   }
 
   private initializeParsers(): void {
@@ -51,6 +52,12 @@ export class CodeParser {
 
   parseFile(filePath: string, content: string): CodeChunk[] {
     const language = this.getLanguageFromPath(filePath);
+    
+    // For JavaScript and TypeScript, use the Lezer parser
+    if (language === 'javascript' || language === 'typescript') {
+      return this.lezerParser.parseFile(filePath, content);
+    }
+    
     const parser = this.parsers.get(language);
 
     if (!parser) {
@@ -65,6 +72,15 @@ export class CodeParser {
       console.error(`Failed to parse file ${filePath}:`, error);
       return this.createSimpleChunks(filePath, content, language);
     }
+  }
+
+  // Helper methods for using Lezer directly
+  parseCodeToAST(code: string): any {
+    return this.lezerParser.parseCodeToAST(code);
+  }
+
+  extractIdentifiers(code: string): string[] {
+    return this.lezerParser.extractIdentifiers(code);
   }
 
   private getLanguageFromPath(filePath: string): string {

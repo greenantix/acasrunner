@@ -1,6 +1,8 @@
 import { getMigrationService } from '@/lib/database/migrations';
 import { getSQLiteVecService } from './vector-storage';
 import { getVectorStorageConfigService } from './vector-storage/config-service';
+import { registerClaudeCodePlugin } from '../plugins/claude-code/register';
+import { pluginRegistry } from './plugin-system/plugin-registry';
 
 export interface StartupStatus {
   initialized: boolean;
@@ -8,6 +10,7 @@ export interface StartupStatus {
     database_migrations: boolean;
     vector_storage: boolean;
     configuration: boolean;
+    plugins: boolean;
   };
   errors: string[];
   timestamp: string;
@@ -21,7 +24,8 @@ export class StartupService {
     services: {
       database_migrations: false,
       vector_storage: false,
-      configuration: false
+      configuration: false,
+      plugins: false
     },
     errors: [],
     timestamp: new Date().toISOString()
@@ -56,7 +60,8 @@ export class StartupService {
     const services = {
       database_migrations: false,
       vector_storage: false,
-      configuration: false
+      configuration: false,
+      plugins: false
     };
 
     try {
@@ -104,6 +109,18 @@ export class StartupService {
       console.log(`📊 Vector database stats: ${stats.total_embeddings} embeddings across ${Object.keys(stats.languages).length} languages`);
     } catch (error) {
       const errorMsg = `Vector storage initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      errors.push(errorMsg);
+      console.error('❌', errorMsg);
+    }
+
+    try {
+      // 4. Initialize plugins
+      console.log('🔌 Initializing plugins...');
+      await registerClaudeCodePlugin();
+      services.plugins = true;
+      console.log('✅ Plugins initialized');
+    } catch (error) {
+      const errorMsg = `Plugin initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
       errors.push(errorMsg);
       console.error('❌', errorMsg);
     }
@@ -192,6 +209,20 @@ export class StartupService {
     } catch (error) {
       serviceHealth.database_migrations = false;
       details.database_migrations = { error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+
+    try {
+      // Check plugins
+      const pluginStats = pluginRegistry.getStats();
+      serviceHealth.plugins = pluginStats.enabled > 0 && pluginStats.errors === 0;
+      details.plugins = {
+        total: pluginStats.total,
+        enabled: pluginStats.enabled,
+        errors: pluginStats.errors
+      };
+    } catch (error) {
+      serviceHealth.plugins = false;
+      details.plugins = { error: error instanceof Error ? error.message : 'Unknown error' };
     }
 
     const healthy = Object.values(serviceHealth).every(status => status);
