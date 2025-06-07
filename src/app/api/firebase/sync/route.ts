@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/firebase/auth-middleware';
 import { syncService } from '@/lib/firebase/sync-service';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const POST = withAuth(async (request: NextRequest, user) => {
   try {
     const { type, data } = await request.json();

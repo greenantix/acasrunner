@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVectorStorageConfigService } from '@/services/vector-storage/config-service';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const configService = getVectorStorageConfigService();

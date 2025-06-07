@@ -1,10 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getIndexingService } from '@/services/vector-storage';
+import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function POST(request: NextRequest) {
   try {
-    const { action, file_path, directory_path, project_id = 'default', options = {} } = await request.json();
+    const {
+      action,
+      file_path,
+      directory_path,
+      project_id = 'default',
+      options = {},
+    } = await request.json();
 
     if (!action || !['index_file', 'index_directory', 'remove_file'].includes(action)) {
       return NextResponse.json(
@@ -31,7 +40,7 @@ export async function POST(request: NextRequest) {
           action,
           file_path: absolutePath,
           status: 'indexed',
-          project_id
+          project_id,
         });
       }
 
@@ -50,7 +59,7 @@ export async function POST(request: NextRequest) {
           action,
           directory_path: absolutePath,
           result,
-          project_id
+          project_id,
         });
       }
 
@@ -69,23 +78,20 @@ export async function POST(request: NextRequest) {
           action,
           file_path: absolutePath,
           status: 'removed',
-          project_id
+          project_id,
         });
       }
 
       default:
-        return NextResponse.json(
-          { error: 'Invalid action' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
     console.error('Code indexing error:', error);
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error during code indexing',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -99,7 +105,7 @@ export async function GET(request: NextRequest) {
     const include_embedding_service = searchParams.get('include_embedding_service') === 'true';
 
     const indexingService = getIndexingService(project_id);
-    
+
     const stats = await indexingService.getIndexingStats();
     const isIndexing = indexingService.isCurrentlyIndexing();
 
@@ -108,26 +114,26 @@ export async function GET(request: NextRequest) {
       stats,
       status: {
         indexing: isIndexing,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     };
 
     if (include_embedding_service) {
       const embeddingServiceStatus = await indexingService.testEmbeddingService();
       response.embedding_service = {
         connected: embeddingServiceStatus,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
 
     return NextResponse.json(response);
   } catch (error) {
     console.error('Indexing stats error:', error);
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to get indexing stats',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

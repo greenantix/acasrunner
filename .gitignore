@@ -74,3 +74,34 @@ fix-build.ps1
 *.ps1
 package-lock.json
 secret.json
+.firebase/hosting.cHVibGlj.cache
+.claude/settings.local.json
+/.github
+/.github
+# Ignore build artifacts
+.next/
+out/
+dist/
+lib/
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Functions
+/functions/node_modules/
+/functions/lib/
+/functions/.env
+
+# ACAS Runner (if separate)
+/acasrunner/node_modules/
+/acasrunner/.next/
+/acasrunner/.env
+
+# General
+node_modules/
+.env
+.env.*
+.vscode/
+.idea/
+.DS_Store

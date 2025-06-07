@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -7,10 +10,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!type || !data) {
-      return NextResponse.json(
-        { error: 'Missing required fields: type, data' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required fields: type, data' }, { status: 400 });
     }
 
     // Process activity data from VS Code extension
@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       metadata: {
         ...metadata,
         userAgent: request.headers.get('user-agent'),
-        remoteAddr: request.headers.get('x-forwarded-for') || 'unknown'
-      }
+        remoteAddr: request.headers.get('x-forwarded-for') || 'unknown',
+      },
     };
 
     // Log activity (in a real implementation, this would save to database)
@@ -58,16 +58,15 @@ export async function POST(request: NextRequest) {
       success: true,
       activityId: activityData.id,
       processed: true,
-      timestamp: activityData.timestamp
+      timestamp: activityData.timestamp,
     });
-
   } catch (error) {
     console.error('Extension activity processing failed:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Failed to process activity data',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -77,12 +76,12 @@ export async function POST(request: NextRequest) {
 async function processFileChange(activity: any) {
   // Process file change events
   const { data } = activity;
-  
+
   if (data.changeType === 'created') {
     console.log(`File created: ${data.filePath}`);
   } else if (data.changeType === 'modified') {
     console.log(`File modified: ${data.filePath}`);
-    
+
     // Check for potential issues or patterns
     if (data.filePath.endsWith('.ts') || data.filePath.endsWith('.js')) {
       // Analyze code changes for potential escalation
@@ -96,11 +95,11 @@ async function processFileChange(activity: any) {
 async function processCodeEdit(activity: any) {
   // Process code editing events
   const { data } = activity;
-  
+
   // Track productivity metrics
   const linesChanged = data.linesAdded + data.linesDeleted;
   console.log(`Code edit: ${linesChanged} lines changed in ${data.fileName}`);
-  
+
   // Check for large changes that might need review
   if (linesChanged > 100) {
     console.log('Large code change detected - might benefit from AI review');
@@ -110,9 +109,9 @@ async function processCodeEdit(activity: any) {
 async function processError(activity: any) {
   // Process error events from VS Code
   const { data } = activity;
-  
+
   console.log(`Error occurred: ${data.errorMessage} in ${data.fileName}:${data.lineNumber}`);
-  
+
   // This could trigger automatic escalation to AI for error analysis
   // or provide contextual help suggestions
 }
@@ -120,9 +119,9 @@ async function processError(activity: any) {
 async function processCommand(activity: any) {
   // Process VS Code command executions
   const { data } = activity;
-  
+
   console.log(`Command executed: ${data.commandId}`);
-  
+
   // Track workflow patterns and suggest optimizations
 }
 
@@ -140,23 +139,22 @@ export async function GET(request: NextRequest) {
       type: ['file_change', 'code_edit', 'error_occurred', 'command_executed'][i % 4],
       data: {
         fileName: `example-${i}.ts`,
-        action: 'example_action'
-      }
+        action: 'example_action',
+      },
     }));
 
     return NextResponse.json({
       success: true,
       activities: mockActivities,
-      total: mockActivities.length
+      total: mockActivities.length,
     });
-
   } catch (error) {
     console.error('Failed to fetch extension activities:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Failed to fetch activities',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

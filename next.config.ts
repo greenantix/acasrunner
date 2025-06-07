@@ -1,7 +1,9 @@
-/** @type {import('next').NextConfig} */
-const path = require('path');
+import type { NextConfig } from 'next';
+import path from 'path';
 
-const nextConfig = {
+const nextConfig: NextConfig = {
+  // output: 'export', // Switched to 'standalone' as per request
+
   experimental: {
     // turbopack removed for build compatibility
   },
@@ -108,8 +110,14 @@ const nextConfig = {
   // Performance optimizations
   productionBrowserSourceMaps: false,
 
-  // Output configuration (temporarily removed for Turbopack testing)
-  // output: 'standalone',
+  // Output configuration for 'standalone' mode:
+  // The 'output' option determines the build output format.
+  // 'standalone' creates a .next/standalone directory with only necessary files for self-hosting.
+  // This was potentially used for Turbopack testing or as an alternative to 'export'.
+  // To enable 'standalone' mode:
+  // 1. Comment out or remove `output: 'export',` (currently active on line 5).
+  // 2. Uncomment the line below.
+  output: 'standalone',
 
   // Claude Code specific settings
   outputFileTracingRoot: process.env.CLAUDE_CODE_PROJECT_ROOT || undefined,

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/firebase/auth-middleware';
 import { firebaseAdmin } from '@/lib/firebase/admin';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface RouteContext {
   params: { projectId: string };
 }

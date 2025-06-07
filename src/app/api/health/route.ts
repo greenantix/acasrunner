@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     // Health check endpoint for VS Code extension and general monitoring
@@ -13,19 +16,19 @@ export async function GET(request: NextRequest) {
         workflow_manager: 'active',
         escalation_system: 'active',
         analytics: 'active',
-        plugin_system: 'active'
+        plugin_system: 'active',
       },
       uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development'
+      environment: process.env.NODE_ENV || 'development',
     });
   } catch (error) {
     console.error('Health check failed:', error);
     return NextResponse.json(
-      { 
-        status: 'unhealthy', 
+      {
+        status: 'unhealthy',
         error: 'Health check failed',
         timestamp: new Date().toISOString(),
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

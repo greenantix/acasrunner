@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     // Health check endpoint for VS Code extension
@@ -11,16 +14,16 @@ export async function GET(request: NextRequest) {
         activity_monitor: 'active',
         ai_assistant: 'active',
         workflow_manager: 'active',
-        escalation_system: 'active'
-      }
+        escalation_system: 'active',
+      },
     });
   } catch (error) {
     console.error('Extension health check failed:', error);
     return NextResponse.json(
-      { 
-        status: 'error', 
+      {
+        status: 'error',
         error: 'Health check failed',
-        timestamp: new Date().toISOString() 
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );

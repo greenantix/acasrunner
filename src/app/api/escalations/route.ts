@@ -2,6 +2,9 @@ import { activityEscalationBridge } from '@/services/activity-escalation-bridge'
 import { escalationManager } from '@/services/escalation-manager';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);

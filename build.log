@@ -1,0 +1,66 @@
+
+> leo-runner@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.3
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ⚠ Compiled with warnings in 2000ms
+
+./node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/handlebars/lib/index.js
+./node_modules/dotprompt/dist/index.js
+./node_modules/@genkit-ai/core/lib/registry.js
+./node_modules/genkit/lib/registry.js
+./node_modules/genkit/lib/genkit.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/real-time-ai-trace.ts
+./src/app/api/ai/trace/route.ts
+
+./node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/handlebars/lib/index.js
+./node_modules/dotprompt/dist/index.js
+./node_modules/@genkit-ai/core/lib/registry.js
+./node_modules/genkit/lib/registry.js
+./node_modules/genkit/lib/genkit.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/real-time-ai-trace.ts
+./src/app/api/ai/trace/route.ts
+
+./node_modules/handlebars/lib/index.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/handlebars/lib/index.js
+./node_modules/dotprompt/dist/index.js
+./node_modules/@genkit-ai/core/lib/registry.js
+./node_modules/genkit/lib/registry.js
+./node_modules/genkit/lib/genkit.js
+./node_modules/genkit/lib/index.mjs
+./src/ai/flows/real-time-ai-trace.ts
+./src/app/api/ai/trace/route.ts
+
+ ✓ Compiled successfully in 2000ms
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+Error: export const dynamic = "force-static"/export const revalidate not configured on route "/api/code-indexing" with "output: export". See more info here: https://nextjs.org/docs/advanced-features/static-html-export
+    at 8619 (.next/server/app/api/code-indexing/route.js:1:2407)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at r (.next/server/app/api/code-indexing/route.js:7:1166)
+    at <unknown> (.next/server/app/api/code-indexing/route.js:7:1217)
+    at t.X (.next/server/webpack-runtime.js:1:2220)
+    at <unknown> (.next/server/app/api/code-indexing/route.js:7:1179)
+    at Object.<anonymous> (.next/server/app/api/code-indexing/route.js:7:1244)
+
+> Build error occurred
+[Error: Failed to collect page data for /api/code-indexing] {
+  type: 'Error'
+}

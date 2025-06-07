@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getIndexingService } from '@/services/vector-storage';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(request: NextRequest) {
   try {
     const { query, options = {} } = await request.json();
