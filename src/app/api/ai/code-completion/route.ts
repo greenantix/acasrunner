@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { providerManager } from '@/services/llm-providers/provider-manager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -50,37 +51,42 @@ async function generateCompletionSuggestions(
   language: string,
   position: any
 ) {
-  // Analyze the current context
-  const context = analyzeCodeContext(fileContent, currentLine, language, position);
-  
-  // Generate suggestions based on context
-  const suggestions = [];
-  
-  // Language-specific completions
-  switch (language) {
-    case 'typescript':
-    case 'javascript':
-      suggestions.push(...generateJSTSCompletions(context));
-      break;
-    case 'python':
-      suggestions.push(...generatePythonCompletions(context));
-      break;
-    case 'java':
-      suggestions.push(...generateJavaCompletions(context));
-      break;
-    case 'cpp':
-    case 'c':
-      suggestions.push(...generateCppCompletions(context));
-      break;
-    default:
-      suggestions.push(...generateGenericCompletions(context));
+  try {
+    // Get the best LLM provider for code completion
+    const provider = await providerManager.selectBestProvider(
+      'code_completion',
+      'low',
+      ['code_review', 'debugging']
+    );
+    
+    if (!provider) {
+      throw new Error('No LLM providers available');
+    }
+
+    // Analyze context
+    const context = analyzeCodeContext(fileContent, currentLine, language, position);
+    
+    // Create completion prompt
+    const prompt = createCompletionPrompt(fileContent, currentLine, language, position, context);
+    
+    // Get AI response
+    const response = await provider.sendRequest({
+      prompt,
+      context: `Language: ${language}, Position: ${position?.line || 0}:${position?.character || 0}`,
+      temperature: 0.3, // Higher temperature for more creative completions
+      maxTokens: 500
+    });
+
+    // Parse and format suggestions
+    const suggestions = parseCompletionResponse(response, context);
+    
+    return suggestions;
+
+  } catch (error) {
+    console.error('LLM completion error:', error);
+    // Fallback to basic context-aware completions
+    return generateBasicCompletions(fileContent, currentLine, language, position);
   }
-  
-  // Add common patterns
-  suggestions.push(...generateCommonPatterns(context));
-  
-  // Filter and rank suggestions
-  return rankSuggestions(suggestions, context);
 }
 
 function analyzeCodeContext(fileContent: string, currentLine: string, language: string, position: any) {
@@ -124,251 +130,144 @@ function analyzeCodeContext(fileContent: string, currentLine: string, language: 
   };
 }
 
-function generateJSTSCompletions(context: any) {
-  const suggestions = [];
-  const { currentLine, lastWord, isInFunction, isInClass } = context;
+function createCompletionPrompt(fileContent: string, currentLine: string, language: string, position: any, context: any): string {
+  const lineNumber = position?.line || 0;
+  const character = position?.character || 0;
   
-  // Console completions
-  if (lastWord === 'console' || currentLine.includes('console.')) {
-    suggestions.push(
-      {
-        text: 'console.log()',
-        insertText: 'console.log($1)',
-        detail: 'Log to console',
-        documentation: 'Outputs a message to the console',
-        kind: 'Method'
-      },
-      {
-        text: 'console.error()',
-        insertText: 'console.error($1)',
-        detail: 'Log error to console',
-        documentation: 'Outputs an error message to the console',
-        kind: 'Method'
-      },
-      {
-        text: 'console.warn()',
-        insertText: 'console.warn($1)',
-        detail: 'Log warning to console',
-        documentation: 'Outputs a warning message to the console',
-        kind: 'Method'
-      }
-    );
-  }
-  
-  // Function-related completions
-  if (isInFunction) {
-    suggestions.push(
-      {
-        text: 'return',
-        insertText: 'return $1;',
-        detail: 'Return statement',
-        documentation: 'Returns a value from the function',
-        kind: 'Keyword'
-      }
-    );
-  }
-  
-  // Async/await patterns
-  if (currentLine.includes('await') || currentLine.includes('async')) {
-    suggestions.push(
-      {
-        text: 'try-catch',
-        insertText: 'try {\n  $1\n} catch (error) {\n  console.error(error);\n}',
-        detail: 'Try-catch block',
-        documentation: 'Handle asynchronous errors',
-        kind: 'Snippet'
-      }
-    );
-  }
-  
-  // Import suggestions
-  if (currentLine.startsWith('import') || lastWord === 'import') {
-    suggestions.push(
-      {
-        text: 'import { } from',
-        insertText: 'import { $1 } from \'$2\';',
-        detail: 'Named import',
-        documentation: 'Import specific exports from a module',
-        kind: 'Snippet'
-      },
-      {
-        text: 'import * as',
-        insertText: 'import * as $1 from \'$2\';',
-        detail: 'Namespace import',
-        documentation: 'Import all exports as a namespace',
-        kind: 'Snippet'
-      }
-    );
-  }
-  
-  return suggestions;
+  return `You are an expert ${language} code completion assistant. Complete the code at the cursor position.
+
+File content:
+\`\`\`${language}
+${fileContent}
+\`\`\`
+
+Current line (line ${lineNumber + 1}): "${currentLine}"
+Cursor position: character ${character}
+
+Context:
+- In function: ${context.isInFunction}
+- In class: ${context.isInClass}
+- In loop: ${context.isInLoop}
+- Available variables: ${context.variables.join(', ') || 'none'}
+- Available functions: ${context.functions.map((f: any) => f.name).join(', ') || 'none'}
+
+Provide 3-5 most relevant code completions for this position. Format each suggestion as:
+SUGGESTION: [completion text]
+DETAIL: [brief description]
+KIND: [Method|Function|Variable|Keyword|Snippet|Module]
+
+Focus on contextually appropriate completions based on what's being typed and the surrounding code.`;
 }
 
-function generatePythonCompletions(context: any) {
-  const suggestions = [];
-  const { currentLine, lastWord, isInFunction, isInClass } = context;
-  
-  // Print statements
-  if (lastWord === 'print' || currentLine.includes('print(')) {
-    suggestions.push({
-      text: 'print()',
-      insertText: 'print($1)',
-      detail: 'Print statement',
-      documentation: 'Outputs text to the console',
-      kind: 'Function'
-    });
-  }
-  
-  // Def keyword
-  if (currentLine.startsWith('def') || lastWord === 'def') {
-    suggestions.push({
-      text: 'def function',
-      insertText: 'def $1($2):\n    $3',
-      detail: 'Function definition',
-      documentation: 'Define a new function',
-      kind: 'Snippet'
-    });
-  }
-  
-  // Class keyword
-  if (currentLine.startsWith('class') || lastWord === 'class') {
-    suggestions.push({
-      text: 'class definition',
-      insertText: 'class $1:\n    def __init__(self$2):\n        $3',
-      detail: 'Class definition',
-      documentation: 'Define a new class',
-      kind: 'Snippet'
-    });
-  }
-  
-  return suggestions;
-}
-
-function generateJavaCompletions(context: any) {
-  const suggestions = [];
-  const { currentLine, lastWord } = context;
-  
-  // System.out completions
-  if (currentLine.includes('System.out')) {
-    suggestions.push(
-      {
-        text: 'System.out.println()',
-        insertText: 'System.out.println($1);',
-        detail: 'Print line',
-        documentation: 'Prints a line to the console',
-        kind: 'Method'
-      }
-    );
-  }
-  
-  // Public static void main
-  if (currentLine.includes('public static')) {
-    suggestions.push({
-      text: 'main method',
-      insertText: 'public static void main(String[] args) {\n    $1\n}',
-      detail: 'Main method',
-      documentation: 'Entry point for Java application',
-      kind: 'Snippet'
-    });
-  }
-  
-  return suggestions;
-}
-
-function generateCppCompletions(context: any) {
-  const suggestions = [];
-  const { currentLine, lastWord } = context;
-  
-  // Include statements
-  if (currentLine.startsWith('#include') || lastWord === '#include') {
-    suggestions.push(
-      {
-        text: '#include <iostream>',
-        insertText: '#include <iostream>',
-        detail: 'Include iostream',
-        documentation: 'Include standard input/output stream',
-        kind: 'Module'
-      },
-      {
-        text: '#include <vector>',
-        insertText: '#include <vector>',
-        detail: 'Include vector',
-        documentation: 'Include standard vector container',
-        kind: 'Module'
-      }
-    );
-  }
-  
-  // Cout statements
-  if (currentLine.includes('std::cout') || currentLine.includes('cout')) {
-    suggestions.push({
-      text: 'cout statement',
-      insertText: 'std::cout << $1 << std::endl;',
-      detail: 'Console output',
-      documentation: 'Output to console',
-      kind: 'Snippet'
-    });
-  }
-  
-  return suggestions;
-}
-
-function generateGenericCompletions(context: any) {
+function parseCompletionResponse(response: any, context: any): any[] {
+  const content = response.content || '';
   const suggestions: any[] = [];
-  const { currentLine, variables, functions } = context;
   
-  // Variable suggestions
-  variables.forEach((variable: any) => {
-    suggestions.push({
-      text: variable,
-      insertText: variable,
-      detail: 'Variable',
-      documentation: `Local variable: ${variable}`,
-      kind: 'Variable'
-    });
-  });
+  // Parse suggestions from AI response
+  const suggestionBlocks = content.split('SUGGESTION:').slice(1);
   
-  // Function suggestions
-  functions.forEach((func: any) => {
-    suggestions.push({
-      text: func.name,
-      insertText: `${func.name}($1)`,
-      detail: 'Function',
-      documentation: `Function: ${func.name}`,
-      kind: 'Function'
-    });
-  });
-  
-  return suggestions;
-}
-
-function generateCommonPatterns(context: any) {
-  const suggestions = [];
-  const { language, isInFunction, isInLoop } = context;
-  
-  // Common error handling
-  suggestions.push({
-    text: 'try-catch',
-    insertText: language === 'python' ? 'try:\n    $1\nexcept Exception as e:\n    print(f"Error: {e}")' :
-                language === 'java' ? 'try {\n    $1\n} catch (Exception e) {\n    e.printStackTrace();\n}' :
-                'try {\n    $1\n} catch (error) {\n    console.error(error);\n}',
-    detail: 'Error handling',
-    documentation: 'Try-catch error handling pattern',
-    kind: 'Snippet'
-  });
-  
-  // Conditional statements
-  if (!isInLoop) {
-    suggestions.push({
-      text: 'if statement',
-      insertText: language === 'python' ? 'if $1:\n    $2' : 'if ($1) {\n    $2\n}',
-      detail: 'Conditional statement',
-      documentation: 'If conditional statement',
-      kind: 'Snippet'
-    });
+  for (const block of suggestionBlocks) {
+    const lines = block.trim().split('\n');
+    if (lines.length === 0) continue;
+    
+    const suggestion = lines[0].trim();
+    const detailLine = lines.find((line: string) => line.startsWith('DETAIL:'));
+    const kindLine = lines.find((line: string) => line.startsWith('KIND:'));
+    
+    if (suggestion) {
+      suggestions.push({
+        text: suggestion,
+        insertText: suggestion,
+        detail: detailLine ? detailLine.replace('DETAIL:', '').trim() : suggestion,
+        kind: kindLine ? kindLine.replace('KIND:', '').trim() : 'Text',
+        documentation: `AI-generated completion for ${context.language}`,
+        sortText: `0${suggestions.length}` // Ensure AI suggestions appear first
+      });
+    }
   }
   
-  return suggestions;
+  // If parsing fails, try to extract any code-like content
+  if (suggestions.length === 0) {
+    const codeMatches = content.match(/`([^`]+)`/g);
+    if (codeMatches) {
+      codeMatches.slice(0, 5).forEach((match: string, index: number) => {
+        const code = match.replace(/`/g, '');
+        suggestions.push({
+          text: code,
+          insertText: code,
+          detail: 'AI suggestion',
+          kind: 'Text',
+          documentation: 'AI-generated code completion',
+          sortText: `0${index}`
+        });
+      });
+    }
+  }
+  
+  return suggestions.slice(0, 10); // Limit to 10 suggestions
+}
+
+function generateBasicCompletions(fileContent: string, currentLine: string, language: string, position: any): any[] {
+  const context = analyzeCodeContext(fileContent, currentLine, language, position);
+  const suggestions: any[] = [];
+  
+  // Add variable completions
+  context.variables.forEach((variable: string, index: number) => {
+    if (variable.toLowerCase().includes(context.lastWord.toLowerCase())) {
+      suggestions.push({
+        text: variable,
+        insertText: variable,
+        detail: 'Local variable',
+        kind: 'Variable',
+        documentation: `Variable: ${variable}`,
+        sortText: `1${index.toString().padStart(3, '0')}`
+      });
+    }
+  });
+  
+  // Add function completions
+  context.functions.forEach((func: any, index: number) => {
+    if (func.name.toLowerCase().includes(context.lastWord.toLowerCase())) {
+      suggestions.push({
+        text: func.name,
+        insertText: `${func.name}()`,
+        detail: 'Function',
+        kind: 'Function',
+        documentation: `Function: ${func.name}`,
+        sortText: `2${index.toString().padStart(3, '0')}`
+      });
+    }
+  });
+  
+  // Add language-specific keywords
+  const keywords = getLanguageKeywords(language);
+  keywords.forEach((keyword: string, index: number) => {
+    if (keyword.toLowerCase().includes(context.lastWord.toLowerCase())) {
+      suggestions.push({
+        text: keyword,
+        insertText: keyword,
+        detail: `${language} keyword`,
+        kind: 'Keyword',
+        documentation: `${language} language keyword`,
+        sortText: `3${index.toString().padStart(3, '0')}`
+      });
+    }
+  });
+  
+  return suggestions.slice(0, 10);
+}
+
+function getLanguageKeywords(language: string): string[] {
+  const keywordMap: { [key: string]: string[] } = {
+    javascript: ['function', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'return', 'class', 'import', 'export'],
+    typescript: ['function', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'return', 'class', 'import', 'export', 'interface', 'type'],
+    python: ['def', 'class', 'if', 'else', 'elif', 'for', 'while', 'return', 'import', 'from', 'try', 'except'],
+    java: ['public', 'private', 'protected', 'class', 'interface', 'if', 'else', 'for', 'while', 'return', 'import'],
+    cpp: ['#include', 'namespace', 'class', 'struct', 'if', 'else', 'for', 'while', 'return', 'public', 'private'],
+    c: ['#include', 'struct', 'if', 'else', 'for', 'while', 'return', 'typedef']
+  };
+  
+  return keywordMap[language] || [];
 }
 
 function extractImports(fileContent: string, language: string) {
@@ -430,36 +329,4 @@ function extractFunctions(fileContent: string, language: string) {
   }
   
   return functions;
-}
-
-function rankSuggestions(suggestions: any[], context: any) {
-  // Simple ranking based on relevance
-  return suggestions
-    .map(suggestion => ({
-      ...suggestion,
-      relevance: calculateRelevance(suggestion, context)
-    }))
-    .sort((a, b) => b.relevance - a.relevance)
-    .slice(0, 10); // Return top 10 suggestions
-}
-
-function calculateRelevance(suggestion: any, context: any) {
-  let score = 0;
-  
-  // Boost score based on context
-  if (suggestion.text.toLowerCase().includes(context.lastWord.toLowerCase())) {
-    score += 10;
-  }
-  
-  // Boost common patterns
-  if (suggestion.kind === 'Snippet') {
-    score += 5;
-  }
-  
-  // Boost based on current line context
-  if (context.currentLine.includes('console') && suggestion.text.includes('console')) {
-    score += 8;
-  }
-  
-  return score;
 }

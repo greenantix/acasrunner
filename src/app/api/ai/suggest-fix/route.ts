@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { providerManager } from '@/services/llm-providers/provider-manager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -16,13 +17,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Simulate AI analysis for fix suggestions
+    // Use AI provider to generate fix suggestions
     const fixSuggestion = await generateFixSuggestion(error, code, language, context);
 
     return NextResponse.json({
       success: true,
       suggestion: fixSuggestion,
-      confidence: 0.85,
+      confidence: fixSuggestion.confidence || 0.85,
       timestamp: new Date().toISOString()
     });
 
@@ -40,61 +41,59 @@ export async function POST(request: NextRequest) {
 }
 
 async function generateFixSuggestion(error: string, code: string, language: string, context: any) {
-  // In a real implementation, this would call the AI service
-  // For now, we'll provide intelligent mock responses based on error patterns
+  try {
+    // Determine error type for provider selection
+    const errorType = detectErrorType(error);
+    const severity = determineSeverity(errorType);
+    
+    // Select the best provider for this type of error
+    const provider = await providerManager.selectBestProvider(
+      errorType, 
+      severity, 
+      ['code_review', 'debugging']
+    );
+    
+    if (!provider) {
+      throw new Error('No LLM providers available');
+    }
 
-  const errorType = detectErrorType(error);
-  
-  switch (errorType) {
-    case 'type_error':
-      return {
-        type: 'type_fix',
-        description: 'Type-related error detected',
-        suggestedFix: generateTypeErrorFix(error, code, language),
-        explanation: 'This error occurs when types don\'t match. Consider adding type annotations or checking variable types.',
-        codeSnippet: generateCodeSnippet(code, errorType),
-        severity: 'medium'
-      };
+    // Prepare the prompt for LLM
+    const prompt = `Analyze this ${language || 'code'} error and provide a specific fix suggestion:
 
-    case 'reference_error':
-      return {
-        type: 'reference_fix',
-        description: 'Reference error detected',
-        suggestedFix: generateReferenceErrorFix(error, code, language),
-        explanation: 'This variable or function is not defined. Check spelling or import statements.',
-        codeSnippet: generateCodeSnippet(code, errorType),
-        severity: 'high'
-      };
+Error: ${error}
 
-    case 'syntax_error':
-      return {
-        type: 'syntax_fix',
-        description: 'Syntax error detected',
-        suggestedFix: generateSyntaxErrorFix(error, code, language),
-        explanation: 'There\'s a syntax issue in your code. Check for missing brackets, semicolons, or typos.',
-        codeSnippet: generateCodeSnippet(code, errorType),
-        severity: 'high'
-      };
+Code Context:
+\`\`\`${language || 'javascript'}
+${code}
+\`\`\`
 
-    case 'runtime_error':
-      return {
-        type: 'runtime_fix',
-        description: 'Runtime error detected',
-        suggestedFix: generateRuntimeErrorFix(error, code, language),
-        explanation: 'This error occurs during execution. Consider adding error handling or null checks.',
-        codeSnippet: generateCodeSnippet(code, errorType),
-        severity: 'medium'
-      };
+${context ? `Additional Context: ${JSON.stringify(context)}` : ''}
 
-    default:
-      return {
-        type: 'general_fix',
-        description: 'General error detected',
-        suggestedFix: generateGeneralFix(error, code, language),
-        explanation: 'Consider reviewing the error message and checking the documentation for the related functionality.',
-        codeSnippet: generateCodeSnippet(code, 'general'),
-        severity: 'low'
-      };
+Please provide:
+1. Root cause analysis
+2. Specific fix with code examples
+3. Step-by-step solution
+4. Prevention strategies
+5. Severity level (low/medium/high)
+6. Confidence score (0-1)
+
+Format the response as a structured analysis with clear code examples.`;
+
+    // Get AI response
+    const response = await provider.sendRequest({
+      prompt,
+      context: `Language: ${language}, Error Type: ${errorType}`,
+      temperature: 0.1,
+      maxTokens: 1500
+    });
+
+    // Parse and structure the response
+    return parseAIResponse(response, errorType);
+
+  } catch (error) {
+    console.error('LLM provider error:', error);
+    // Fallback to basic error analysis if LLM fails
+    return generateBasicFixSuggestion(error as string, code, language);
   }
 }
 
@@ -113,180 +112,161 @@ function detectErrorType(error: string): string {
   if (lowerError.includes('runtime') || lowerError.includes('null') || lowerError.includes('undefined')) {
     return 'runtime_error';
   }
+  if (lowerError.includes('dependency') || lowerError.includes('module') || lowerError.includes('import')) {
+    return 'dependency_error';
+  }
+  if (lowerError.includes('performance') || lowerError.includes('memory') || lowerError.includes('timeout')) {
+    return 'performance_issue';
+  }
+  if (lowerError.includes('security') || lowerError.includes('vulnerability')) {
+    return 'security_vulnerability';
+  }
   
   return 'general';
 }
 
-function generateTypeErrorFix(error: string, code: string, language: string) {
-  return {
-    steps: [
-      'Add explicit type annotations',
-      'Check variable types before operations',
-      'Use type guards for runtime type checking',
-      'Consider using TypeScript strict mode'
-    ],
-    codeExample: language === 'typescript' ? `
-// Before
-function process(data) {
-  return data.length;
-}
-
-// After
-function process(data: string | any[]): number {
-  if (typeof data === 'string' || Array.isArray(data)) {
-    return data.length;
+function determineSeverity(errorType: string): string {
+  switch (errorType) {
+    case 'security_vulnerability':
+      return 'critical';
+    case 'syntax_error':
+    case 'reference_error':
+      return 'high';
+    case 'type_error':
+    case 'performance_issue':
+      return 'medium';
+    default:
+      return 'low';
   }
-  throw new Error('Invalid data type');
 }
-    ` : `
-// Add type checking
-function process(data) {
-  if (typeof data !== 'string' && !Array.isArray(data)) {
-    throw new Error('Invalid data type');
-  }
-  return data.length;
-}
-    `,
-    preventionTips: [
-      'Use TypeScript for better type safety',
-      'Add runtime type checks',
-      'Use linting rules for type consistency'
-    ]
+
+function parseAIResponse(response: any, errorType: string) {
+  const content = response.content || '';
+  
+  // Extract confidence score from AI response
+  const confidenceMatch = content.match(/confidence.*?(\d*\.?\d+)/i);
+  const confidence = confidenceMatch ? parseFloat(confidenceMatch[1]) : (response.metadata?.confidence || 0.8);
+  
+  // Extract severity
+  const severityMatch = content.match(/severity:?\s*(low|medium|high|critical)/i);
+  const severity = severityMatch ? severityMatch[1].toLowerCase() : determineSeverity(errorType);
+  
+  // Parse steps (look for numbered lists)
+  const steps = extractSteps(content);
+  
+  // Parse code examples
+  const codeExample = extractCodeExample(content);
+  
+  return {
+    type: `${errorType}_fix`,
+    description: `AI-analyzed ${errorType.replace('_', ' ')} solution`,
+    suggestedFix: {
+      steps,
+      codeExample,
+      aiAnalysis: content,
+      preventionTips: extractPreventionTips(content)
+    },
+    explanation: extractExplanation(content),
+    codeSnippet: codeExample,
+    severity,
+    confidence,
+    provider: response.provider,
+    model: response.model,
+    metadata: response.metadata
   };
 }
 
-function generateReferenceErrorFix(error: string, code: string, language: string) {
-  return {
-    steps: [
-      'Check variable spelling and case sensitivity',
-      'Verify import statements',
-      'Ensure variables are declared before use',
-      'Check scope and closure issues'
-    ],
-    codeExample: `
-// Common fixes:
-// 1. Add missing import
-import { someFunction } from './utils';
-
-// 2. Declare variable
-let myVariable;
-
-// 3. Check spelling
-// someVarriable -> someVariable
-    `,
-    preventionTips: [
-      'Use IDE auto-completion',
-      'Enable strict mode',
-      'Use consistent naming conventions'
-    ]
-  };
-}
-
-function generateSyntaxErrorFix(error: string, code: string, language: string) {
-  return {
-    steps: [
-      'Check for missing brackets or parentheses',
-      'Verify semicolon placement',
-      'Look for typos in keywords',
-      'Ensure proper string quoting'
-    ],
-    codeExample: `
-// Common syntax fixes:
-// Missing bracket
-if (condition) {
-  // code here
-} // <- Add this bracket
-
-// Missing semicolon (if required)
-const value = getData();
-
-// Proper string quoting
-const message = "Hello, world!";
-    `,
-    preventionTips: [
-      'Use code formatter',
-      'Enable syntax highlighting',
-      'Use bracket matching in IDE'
-    ]
-  };
-}
-
-function generateRuntimeErrorFix(error: string, code: string, language: string) {
-  return {
-    steps: [
-      'Add null/undefined checks',
-      'Use try-catch blocks',
-      'Validate input parameters',
-      'Add defensive programming practices'
-    ],
-    codeExample: `
-// Add null checks
-function process(data) {
-  if (!data) {
-    throw new Error('Data is required');
+function extractSteps(content: string): string[] {
+  const steps: string[] = [];
+  const lines = content.split('\n');
+  
+  for (const line of lines) {
+    // Look for numbered steps
+    const stepMatch = line.match(/^\s*\d+\.\s*(.+)$/);
+    if (stepMatch) {
+      steps.push(stepMatch[1].trim());
+    }
   }
   
-  if (data.items && Array.isArray(data.items)) {
-    return data.items.length;
+  return steps.length > 0 ? steps : ['Review the AI analysis above for detailed steps'];
+}
+
+function extractCodeExample(content: string): string {
+  // Extract code blocks
+  const codeBlockMatch = content.match(/```[\s\S]*?```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[0];
   }
   
-  return 0;
+  // Look for inline code
+  const inlineCodeMatch = content.match(/`[^`]+`/);
+  if (inlineCodeMatch) {
+    return inlineCodeMatch[0];
+  }
+  
+  return 'See AI analysis for code examples';
 }
 
-// Use try-catch
-try {
-  const result = riskyOperation();
-  return result;
-} catch (error) {
-  console.error('Operation failed:', error);
-  return null;
-}
-    `,
-    preventionTips: [
-      'Always validate inputs',
-      'Use optional chaining (?.) where available',
-      'Implement proper error handling'
-    ]
-  };
+function extractPreventionTips(content: string): string[] {
+  const tips: string[] = [];
+  const lines = content.split('\n');
+  let inPreventionSection = false;
+  
+  for (const line of lines) {
+    if (line.toLowerCase().includes('prevention') || line.toLowerCase().includes('avoid')) {
+      inPreventionSection = true;
+      continue;
+    }
+    
+    if (inPreventionSection) {
+      const tipMatch = line.match(/^\s*[-•*]\s*(.+)$/) || line.match(/^\s*\d+\.\s*(.+)$/);
+      if (tipMatch) {
+        tips.push(tipMatch[1].trim());
+      } else if (line.trim() === '' || line.match(/^[A-Z]/)) {
+        inPreventionSection = false;
+      }
+    }
+  }
+  
+  return tips.length > 0 ? tips : ['Follow best practices for this language', 'Use proper error handling'];
 }
 
-function generateGeneralFix(error: string, code: string, language: string) {
+function extractExplanation(content: string): string {
+  // Look for explanation or analysis section
+  const explanationMatch = content.match(/(?:explanation|analysis|cause):\s*([^\n]+(?:\n(?!\n)[^\n]+)*)/i);
+  if (explanationMatch) {
+    return explanationMatch[1].trim();
+  }
+  
+  // Fallback to first paragraph
+  const firstParagraph = content.split('\n\n')[0];
+  return firstParagraph.length > 10 ? firstParagraph : 'AI analysis provided above';
+}
+
+function generateBasicFixSuggestion(error: string, code: string, language: string) {
+  const errorType = detectErrorType(error);
+  const severity = determineSeverity(errorType);
+  
   return {
-    steps: [
-      'Read the error message carefully',
-      'Check the documentation',
-      'Search for similar issues online',
-      'Consider debugging step by step'
-    ],
-    codeExample: `
-// General debugging approach:
-console.log('Debug point 1');
-
-// Add logging to understand the issue
-try {
-  const result = problematicFunction();
-  console.log('Result:', result);
-} catch (error) {
-  console.error('Error details:', error);
-}
-    `,
-    preventionTips: [
-      'Write unit tests',
-      'Use debugging tools',
-      'Follow coding best practices'
-    ]
+    type: `${errorType}_fix`,
+    description: `Basic ${errorType.replace('_', ' ')} analysis`,
+    suggestedFix: {
+      steps: [
+        'Review the error message carefully',
+        'Check the code syntax and logic',
+        'Consult documentation for the specific function or library',
+        'Consider adding error handling or validation'
+      ],
+      codeExample: '// Add proper error handling\ntry {\n  // your code here\n} catch (error) {\n  console.error("Error:", error);\n}',
+      aiAnalysis: 'LLM analysis unavailable - using basic error categorization',
+      preventionTips: ['Use proper error handling', 'Add input validation', 'Follow coding best practices']
+    },
+    explanation: `This appears to be a ${errorType.replace('_', ' ')}. ${error}`,
+    codeSnippet: code.split('\n').slice(0, 10).join('\n'),
+    severity,
+    confidence: 0.5,
+    provider: 'fallback',
+    model: 'basic-analysis'
   };
 }
 
-function generateCodeSnippet(code: string, errorType: string) {
-  // Extract relevant portion of code around the error
-  const lines = code.split('\n');
-  const maxLines = 10;
-  
-  if (lines.length <= maxLines) {
-    return code;
-  }
-  
-  // Return first 10 lines as example
-  return lines.slice(0, maxLines).join('\n') + '\n// ... (truncated)';
-}

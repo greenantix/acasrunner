@@ -53,7 +53,7 @@ class ClientActivityService {
     
     this.initializeErrorHandling();
     this.connectToServer();
-    this.addMockData();
+    this.addInitialSystemEvent();
     this.isInitialized = true;
   }
 
@@ -105,28 +105,18 @@ class ClientActivityService {
     };
   }
 
-  private addMockData(): void {
-    // Add some initial mock data for immediate testing
-    const mockActivities: ActivityEvent[] = [
-      {
-        id: 'mock_1',
-        timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-        type: 'system_event',
-        source: 'client-activity-service',
-        message: 'Activity monitoring system initialized',
-        details: { severity: 'low' }
-      },
-      {
-        id: 'mock_2', 
-        timestamp: new Date(Date.now() - 3 * 60 * 1000), // 3 minutes ago
-        type: 'user_action',
-        source: 'dashboard',
-        message: 'User opened dashboard page',
-        details: { severity: 'low' }
-      }
-    ];
+  private addInitialSystemEvent(): void {
+    // Add a single system initialization event
+    const systemEvent: ActivityEvent = {
+      id: this.generateId(),
+      timestamp: new Date(),
+      type: 'system_event',
+      source: 'client-activity-service',
+      message: 'Activity monitoring system initialized',
+      details: { severity: 'low' }
+    };
 
-    mockActivities.forEach(activity => this.addActivity(activity));
+    this.addActivity(systemEvent);
   }
 
   private logError(type: string, error: any, severity: 'low' | 'medium' | 'high' | 'critical'): void {

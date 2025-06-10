@@ -28,27 +28,61 @@ leo Runner (AI Coding Assistant Supervisor) is a comprehensive platform designed
  * Analytics Dashboard: Insights and metrics for productivity, errors, and AI effectiveness.
  * WSL Terminal Integration: Experimental embedded terminal for direct WSL interaction.
 🚀 Quick Start
-Prerequisites
- * Node.js 18+
- * npm or yarn
- * Firebase CLI (optional)
- * A code editor (VSCode recommended)
-Installation
- * Clone the repository:
+
+## Prerequisites
+- Node.js 18+
+- npm (comes with Node.js)
+- Firebase CLI (optional)
+- Git
+
+## One-Line Setup
+```bash
+git clone <repository-url> && cd leo-runner && ./setup.sh
+```
+
+## Manual Installation
+
+1. **Clone the repository:**
+   ```bash
    git clone <repository-url>
-cd greenantix-leorunner
+   cd leo-runner
+   ```
 
- * Install dependencies:
-   npm install
+2. **Run the setup script:**
+   ```bash
+   ./setup.sh
+   ```
+   This will automatically install dependencies and set up your environment.
 
- * Setup environment variables:
-   Copy the example environment file and populate it with your API keys.
+3. **Configure environment variables:**
+   ```bash
+   # Edit .env file with your API keys
    cp .env.example .env
-# Edit .env with your ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY, FIREBASE_API_KEY, FIREBASE_PROJECT_ID
+   ```
+   Add your API keys for LLM providers:
+   - `ANTHROPIC_API_KEY` - For Claude models
+   - `OPENAI_API_KEY` - For GPT models  
+   - `GOOGLE_API_KEY` - For Gemini models
 
-   Note: ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY, FIREBASE_API_KEY, FIREBASE_PROJECT_ID are required environment variables.
- * Start the development server:
-   npm run dev
+4. **Start the development server:**
+   ```bash
+   ./start.sh          # Full startup with health checks
+   # OR
+   ./start-dev.sh      # Quick development startup
+   ```
+
+## Startup Options
+
+| Command | Description |
+|---------|-------------|
+| `./start.sh` | Full startup with dependency checks and health monitoring |
+| `./start-dev.sh` | Quick development startup (fastest) |
+| `./start.sh prod` | Production build and start |
+| `./start.sh build` | Build application only |
+| `./start.sh test` | Run tests |
+
+## Windows Users
+Use `start.bat` for Windows Command Prompt or PowerShell.
 
 With Claude Code Integration
 The project includes a setup script to configure your environment for Claude Code.

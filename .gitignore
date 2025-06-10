@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
+# Dependencies
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -10,98 +10,71 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# Testing
 /coverage
+*.test.js
+*.test.ts
 
-# next.js
+# Next.js
 /.next/
 /out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
 next-env.d.ts
 
-.genkit/*
-.env*
+# Production builds
+/build
+/dist
+*.tsbuildinfo
 
-# firebase
-firebase-debug.log
-firestore-debug.log
-# Claude Code
-.claude-cache/
-claude-analysis/
-*.claude-temp
-logs/
-temp/
-
-# Environment files (already in your .env)
-*.env.local
-*.env.development.local
-*.env.test.local
-*.env.production.local
+# Environment files
+.env
+.env.*
+!.env.example
 
 # API Keys and sensitive files
 keyfile.json
 *.pem
 *.key
 *-key.json
-
-# biOS specific (from your config)
-biOS/logs/
-biOS/data/temp/
-package-lock.json
-BUILD_FIX.md
-PLUGIN_SYSTEM_FIXES.md
-TYPESCRIPT_CACHE_FIX.md
-TYPESCRIPT_FIX_GUIDE.md
-fix-build.ps1
-*.ps1
-package-lock.json
 secret.json
-.firebase/hosting.cHVibGlj.cache
-.claude/settings.local.json
-/.github
-/.github
-# Ignore build artifacts
-.next/
-out/
-dist/
-lib/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+build.log
 
 # Firebase
 .firebase/
 firebase-debug.log
+firestore-debug.log
 
-# Functions
-/functions/node_modules/
+# Functions build
 /functions/lib/
 /functions/.env
 
-# ACAS Runner (if separate)
-/acasrunner/node_modules/
-/acasrunner/.next/
-/acasrunner/.env
+# Claude Code cache
+.claude-cache/
+claude-analysis/
+*.claude-temp
 
-# General
-node_modules/
-.env
-.env.*
+# Temporary files
+logs/
+temp/
+data/
+
+# VSCode Extension build
+/vscode-extension/out/
+
+# Development files
+.vercel
+.DS_Store
 .vscode/
 .idea/
-.DS_Store
+
+# Genkit
+.genkit/*
+
+# Lock files (keep package.json, ignore lock files)
+package-lock.json
+yarn.lock

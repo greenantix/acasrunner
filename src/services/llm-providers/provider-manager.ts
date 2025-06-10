@@ -2,6 +2,7 @@ import { LLMProvider, ProviderConfig, BaseLLMProvider, LLMRequest, LLMResponse }
 import { ClaudeProvider } from './claude-provider';
 import { OpenAIProvider } from './openai-provider';
 import { GeminiProvider } from './gemini-provider';
+import { OllamaProvider } from './ollama-provider';
 
 export class ProviderManager {
   private providers: Map<string, BaseLLMProvider> = new Map();
@@ -55,6 +56,51 @@ export class ProviderManager {
           requestsPerMinute: 60,
           tokensPerMinute: 50000
         }
+      },
+      {
+        id: 'ollama-llama3',
+        name: 'Llama 3 (Local)',
+        type: 'ollama',
+        model: 'llama3.2',
+        baseUrl: 'http://localhost:11434',
+        temperature: 0.2,
+        maxTokens: 2000,
+        specialties: ['code_review', 'debugging', 'documentation'],
+        enabled: false, // Disabled by default - needs Ollama to be running
+        rateLimit: {
+          requestsPerMinute: 120, // Higher since it's local
+          tokensPerMinute: 100000
+        }
+      },
+      {
+        id: 'ollama-codellama',
+        name: 'CodeLlama (Local)',
+        type: 'ollama',
+        model: 'codellama',
+        baseUrl: 'http://localhost:11434',
+        temperature: 0.1,
+        maxTokens: 4000,
+        specialties: ['code_review', 'debugging', 'optimization'],
+        enabled: false, // Disabled by default - needs Ollama to be running
+        rateLimit: {
+          requestsPerMinute: 100,
+          tokensPerMinute: 150000
+        }
+      },
+      {
+        id: 'ollama-deepseek',
+        name: 'DeepSeek Coder (Local)',
+        type: 'ollama',
+        model: 'deepseek-coder',
+        baseUrl: 'http://localhost:11434',
+        temperature: 0.1,
+        maxTokens: 4000,
+        specialties: ['code_review', 'debugging', 'optimization'],
+        enabled: false, // Disabled by default - needs Ollama to be running
+        rateLimit: {
+          requestsPerMinute: 100,
+          tokensPerMinute: 150000
+        }
       }
     ];
 
@@ -88,6 +134,9 @@ export class ProviderManager {
     if (geminiConfig) {
       this.addProvider(geminiConfig, { apiKey: 'configured-via-genkit' });
     }
+
+    // Ollama configuration - check if it's running locally
+    this.loadOllamaProviders();
   }
 
   addProvider(config: LLMProvider, providerConfig: ProviderConfig): void {
@@ -104,6 +153,9 @@ export class ProviderManager {
         break;
       case 'gemini':
         provider = new GeminiProvider(config, providerConfig);
+        break;
+      case 'ollama':
+        provider = new OllamaProvider(config, providerConfig);
         break;
       default:
         throw new Error(`Unsupported provider type: ${config.type}`);
@@ -260,6 +312,92 @@ export class ProviderManager {
       // For now, we'll require manual removal and re-addition
       console.warn(`Provider ${providerId} configuration updated. Restart may be required.`);
     }
+  }
+
+  private async loadOllamaProviders(): Promise<void> {
+    // Check if Ollama is running on localhost
+    const ollamaConfigs = this.defaultProviders.filter(p => p.type === 'ollama');
+    
+    for (const config of ollamaConfigs) {
+      try {
+        const baseUrl = config.baseUrl || 'http://localhost:11434';
+        
+        // Test if Ollama is running
+        const healthResponse = await fetch(`${baseUrl}/api/tags`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (healthResponse.ok) {
+          const data = await healthResponse.json();
+          const models = data.models || [];
+          
+          // Check if the specific model exists
+          const modelExists = models.some((model: any) => 
+            model.name === config.model || 
+            model.name.startsWith(config.model) ||
+            model.name.includes(config.model.split(':')[0])
+          );
+
+          if (modelExists) {
+            console.log(`Ollama model ${config.model} found, enabling provider ${config.id}`);
+            config.enabled = true;
+            this.addProvider(config, { 
+              apiKey: 'local', // Ollama doesn't need API key
+              baseUrl 
+            });
+          } else {
+            console.log(`Ollama model ${config.model} not found. Available models:`, 
+              models.map((m: any) => m.name));
+          }
+        }
+      } catch (error) {
+        // Ollama not running or not accessible - skip silently
+        console.log(`Ollama not accessible for ${config.id}:`, error instanceof Error ? error.message : 'Unknown error');
+      }
+    }
+  }
+
+  // Ollama-specific methods
+  async getOllamaModels(): Promise<string[]> {
+    try {
+      const response = await fetch('http://localhost:11434/api/tags');
+      if (!response.ok) return [];
+      
+      const data = await response.json();
+      return data.models?.map((model: any) => model.name) || [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async pullOllamaModel(modelName: string): Promise<boolean> {
+    try {
+      const response = await fetch('http://localhost:11434/api/pull', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: modelName })
+      });
+      
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async refreshOllamaProviders(): Promise<void> {
+    // Remove existing Ollama providers
+    const ollamaProviderIds = Array.from(this.configurations.keys())
+      .filter(id => this.configurations.get(id)?.type === 'ollama');
+    
+    ollamaProviderIds.forEach(id => this.removeProvider(id));
+    
+    // Reload Ollama providers
+    await this.loadOllamaProviders();
   }
 }
 

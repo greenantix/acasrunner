@@ -1,92 +1,83 @@
-import { providerManager } from '@/services/llm-providers/provider-manager';
 import { NextRequest, NextResponse } from 'next/server';
+import { providerManager } from '@/services/llm-providers/provider-manager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+export async function GET(request: NextRequest) {
+  try {
+    // Test all providers
+    const testResults = await providerManager.testAllProviders();
+    
+    // Get provider stats
+    const stats = providerManager.getProviderStats();
+    
+    // Get provider configurations
+    const configurations = providerManager.getProviderConfigurations();
+    
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      testResults,
+      stats,
+      configurations: configurations.map(config => ({
+        id: config.id,
+        name: config.name,
+        type: config.type,
+        model: config.model,
+        enabled: config.enabled,
+        specialties: config.specialties
+      }))
+    });
+
+  } catch (error) {
+    console.error('LLM provider test failed:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to test LLM providers',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { providerId, testMessage = 'Hello, this is a test message.' } = await request.json();
+    const body = await request.json();
+    const { providerId, prompt } = body;
 
-    if (!providerId) {
-      return NextResponse.json({ error: 'Missing providerId' }, { status: 400 });
-    }
-
-    const provider = providerManager.getProvider(providerId);
-    if (!provider) {
-      return NextResponse.json({ error: `Provider not found: ${providerId}` }, { status: 404 });
-    }
-
-    // Test the provider connection
-    const connectionTest = await provider.testConnection();
-
-    if (!connectionTest) {
+    if (!providerId || !prompt) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Provider connection test failed',
-          providerId,
-          providerType: provider.getType(),
-        },
+        { error: 'Missing required fields: providerId, prompt' },
         { status: 400 }
       );
     }
 
-    // If connection works, try a simple request
-    try {
-      const response = await provider.sendRequest({
-        prompt: `Test request: ${testMessage}. Please respond with a brief acknowledgment.`,
-        temperature: 0.1,
-        maxTokens: 100,
-      });
-      return NextResponse.json({
-        success: true,
-        providerId,
-        providerType: provider.getType(),
-        connectionTest: true,
-        testResponse: response.content,
-        responseTime: 0, // LLM response doesn't include time metrics
-      });
-    } catch (requestError) {
-      return NextResponse.json({
-        success: false,
-        providerId,
-        providerType: provider.getType(),
-        connectionTest: true,
-        requestTest: false,
-        error: `Request test failed: ${requestError instanceof Error ? requestError.message : String(requestError)}`,
-      });
-    }
-  } catch (error) {
-    console.error('Error testing LLM provider:', error);
-    return NextResponse.json(
-      {
-        error: `Failed to test provider: ${error instanceof Error ? error.message : String(error)}`,
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    // Test all providers
-    const results = await providerManager.testAllProviders();
-    const stats = providerManager.getProviderStats();
+    // Test specific provider
+    const response = await providerManager.sendRequest(providerId, {
+      prompt,
+      maxTokens: 200,
+      temperature: 0.1
+    });
 
     return NextResponse.json({
-      testResults: results,
-      stats,
-      timestamp: new Date().toISOString(),
+      success: true,
+      providerId,
+      response,
+      timestamp: new Date().toISOString()
     });
+
   } catch (error) {
-    console.error('Error testing all LLM providers:', error);
+    console.error('Provider test request failed:', error);
     return NextResponse.json(
-      {
-        error: `Failed to test providers: ${error instanceof Error ? error.message : String(error)}`,
+      { 
+        success: false, 
+        error: 'Failed to test provider request',
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
   }
 }
-
