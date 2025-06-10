@@ -659,7 +659,7 @@ export class CrashRecoveryManager extends EventEmitter {
     
     try {
       const { watch } = require('fs');
-      const watcher = watch(filePath, (eventType) => {
+      const watcher = watch(filePath, (eventType: string) => {
         if (eventType === 'change') {
           this.addFileSnapshot(filePath);
         }
@@ -783,7 +783,7 @@ export class CrashRecoveryManager extends EventEmitter {
     try {
       const { readdirSync } = require('fs');
       const files = readdirSync(this.recoveryDir);
-      return files.some(file => file.startsWith('context-') && file.endsWith('.json'));
+      return files.some((file: string) => file.startsWith('context-') && file.endsWith('.json'));
     } catch (error) {
       return false;
     }

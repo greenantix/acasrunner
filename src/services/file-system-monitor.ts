@@ -199,8 +199,10 @@ export class FileSystemMonitor {
             message: `Indexed file: ${this.getFileName(filePath)}`,
             details: {
               filePath: this.getRelativePath(filePath),
-              action: 'indexed',
               severity: 'low',
+            },
+            metadata: {
+              action: 'indexed'
             },
           });
         }).catch((error: Error) => {

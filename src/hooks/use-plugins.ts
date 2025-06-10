@@ -14,7 +14,7 @@ interface PluginContextType {
 // Create the context with explicit name
 const PluginContextInternal = React.createContext<PluginContextType | null>(null);
 
-export function PluginProvider({ children }: { children: ReactNode }): JSX.Element {
+export function PluginProvider({ children }: { children: ReactNode }): React.ReactElement {
   const [registry] = React.useState(() => new PluginRegistry());
   const [plugins, setPlugins] = React.useState<PluginInstance[]>([]);
 

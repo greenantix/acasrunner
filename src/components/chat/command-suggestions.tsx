@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -21,7 +21,7 @@ interface Command {
   description: string;
   usage: string;
   category: 'session' | 'export' | 'context' | 'plugin' | 'system';
-  icon: JSX.Element;
+  icon: ReactElement;
   example?: string;
 }
 

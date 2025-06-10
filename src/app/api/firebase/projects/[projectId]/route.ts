@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/firebase/auth-middleware';
+import { withAuth, AuthenticatedUser } from '@/lib/firebase/auth-middleware';
 import { firebaseAdmin } from '@/lib/firebase/admin';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-interface RouteContext {
-  params: { projectId: string };
-}
-
-export const GET = withAuth(async (request: NextRequest, user, { params }: RouteContext) => {
+export const GET = withAuth(async (request: NextRequest, user: AuthenticatedUser) => {
   try {
-    const { projectId } = params;
+    const projectId = request.url.split('/').pop();
+    if (!projectId) {
+      return NextResponse.json(
+        { error: 'Project ID is required' },
+        { status: 400 }
+      );
+    }
     const db = firebaseAdmin.getFirestore();
     
     const projectDoc = await db.collection('projects').doc(projectId).get();
@@ -48,9 +50,15 @@ export const GET = withAuth(async (request: NextRequest, user, { params }: Route
   }
 });
 
-export const PUT = withAuth(async (request: NextRequest, user, { params }: RouteContext) => {
+export const PUT = withAuth(async (request: NextRequest, user: AuthenticatedUser) => {
   try {
-    const { projectId } = params;
+    const projectId = request.url.split('/').pop();
+    if (!projectId) {
+      return NextResponse.json(
+        { error: 'Project ID is required' },
+        { status: 400 }
+      );
+    }
     const updateData = await request.json();
     const db = firebaseAdmin.getFirestore();
     
@@ -104,9 +112,15 @@ export const PUT = withAuth(async (request: NextRequest, user, { params }: Route
   }
 });
 
-export const DELETE = withAuth(async (request: NextRequest, user, { params }: RouteContext) => {
+export const DELETE = withAuth(async (request: NextRequest, user: AuthenticatedUser) => {
   try {
-    const { projectId } = params;
+    const projectId = request.url.split('/').pop();
+    if (!projectId) {
+      return NextResponse.json(
+        { error: 'Project ID is required' },
+        { status: 400 }
+      );
+    }
     const db = firebaseAdmin.getFirestore();
     
     const projectRef = db.collection('projects').doc(projectId);

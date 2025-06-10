@@ -80,7 +80,7 @@ export class EmbeddingService {
     } catch (error) {
       clearTimeout(timeoutId);
       
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`Embedding generation timed out after ${this.config.timeout}ms`);
       }
       

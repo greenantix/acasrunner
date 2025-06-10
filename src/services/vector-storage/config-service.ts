@@ -136,10 +136,11 @@ export class VectorStorageConfigService {
     };
   }
 
-  private getValueType(value: any): string {
+  private getValueType(value: any): 'string' | 'number' | 'boolean' | 'object' | 'array' {
     if (typeof value === 'boolean') return 'boolean';
     if (typeof value === 'number') return 'number';
     if (Array.isArray(value)) return 'array';
+    if (typeof value === 'object' && value !== null) return 'object';
     return 'string';
   }
 

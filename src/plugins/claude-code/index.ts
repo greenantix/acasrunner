@@ -7,7 +7,7 @@ import { StruggleManager } from './struggle-settings';
 import { ClaudeCodeMonitor, TaskRequest, TaskVerification } from './monitor';
 import { WSLOptimizer, SystemInfo, WSLPathMapping, TurboPromptEnhancement } from './wsl-optimizer';
 import { DriftDetector, ImportViolation, DriftAction, HealthReport, FixRecommendation, PackageJson } from './drift-detector';
-import { CrashRecoveryManager, CrashContext, TaskContext, FileSnapshot, Message, ErrorInfo, RestoreResult } from './crash-recovery';
+import { CrashRecoveryManager, CrashContext, TaskContext, FileSnapshot, Message, ErrorInfo, RestoreResult, UserContext as CrashUserContext, SystemEvent as CrashSystemEvent } from './crash-recovery';
 
 export class ClaudeCodePlugin implements Plugin {
   id = 'claude-code';
@@ -175,8 +175,8 @@ export class ClaudeCodePlugin implements Plugin {
     if (!this.isActive) return;
 
     try {
-      // Get userId from API context if not provided
-      const currentUserId = userId || this.api?.auth?.userId || 'anonymous';
+      // Get userId from provided parameter or default to anonymous
+      const currentUserId = userId || 'anonymous';
       
       const pattern = await this.escalationHandler.analyzeError(error, currentUserId);
       
@@ -219,7 +219,7 @@ export class ClaudeCodePlugin implements Plugin {
         }
         break;
       case 'error':
-        await this.handleError(event);
+        // Error handling is done through onError method
         break;
       case 'system_event':
         if (event.message.includes('claude') || event.message.includes('process')) {
@@ -465,7 +465,9 @@ export class ClaudeCodePlugin implements Plugin {
             source: 'claude-code-plugin',
             message: `Analyzed Claude file: ${filePath}`,
             details: {
-              filePath,
+              filePath
+            },
+            metadata: {
               contentLength: content.length
             }
           };
@@ -617,7 +619,7 @@ export class ClaudeCodePlugin implements Plugin {
 
   // Enhanced status with task verification stats
   async getStatus(userId?: string): Promise<{ active: boolean; stats: any }> {
-    const baseStats = {
+    const baseStats: any = {
       activeSessions: await this.historyManager.getActiveSessionCount(),
       totalEvents: await this.historyManager.getTotalEventCount(),
       lastActivity: await this.historyManager.getLastActivityTime(),
@@ -792,7 +794,7 @@ export class ClaudeCodePlugin implements Plugin {
   }
 
   // Crash Recovery public API
-  async startCrashRecoverySession(sessionId: string, task: TaskContext, userContext: UserContext): Promise<void> {
+  async startCrashRecoverySession(sessionId: string, task: TaskContext, userContext: CrashUserContext): Promise<void> {
     try {
       await this.crashRecovery.startSession(sessionId, task, userContext);
       console.log(`[Claude Code Plugin] ✅ Started crash recovery tracking for session: ${sessionId}`);
@@ -894,7 +896,7 @@ export class ClaudeCodePlugin implements Plugin {
     }
   }
 
-  detectSystemCrash(event: SystemEvent): boolean {
+  detectSystemCrash(event: CrashSystemEvent): boolean {
     try {
       return this.crashRecovery.detectCrash(event);
     } catch (error) {

@@ -31,7 +31,16 @@ export class ErrorHandler {
     try {
       const db = firebaseAdmin.getFirestore();
       
-      const errorDoc = {
+      const errorDoc: {
+        errorType: string;
+        errorMessage: string;
+        stackTrace: string | undefined;
+        userUid: string | undefined;
+        context: Record<string, any>;
+        timestamp: Date;
+        errorCode?: string;
+        details?: Record<string, any>;
+      } = {
         errorType: error.name,
         errorMessage: error.message,
         stackTrace: error.stack,
@@ -92,7 +101,7 @@ export class ErrorHandler {
     try {
       const db = firebaseAdmin.getFirestore();
       
-      let query = db.collection('errorLogs');
+      let query: any = db.collection('errorLogs');
       
       if (timeRange) {
         query = query
@@ -103,7 +112,7 @@ export class ErrorHandler {
       const snapshot = await query.get();
       const errors: any[] = [];
       
-      snapshot.forEach((doc) => {
+      snapshot.forEach((doc: any) => {
         errors.push(doc.data());
       });
 

@@ -113,7 +113,7 @@ export class SyncService {
     }
   }
 
-  async getProjectStruggles(projectId: string, userUid: string): Promise<StruggleData[]> {
+  async getProjectStruggles(projectId: string, userUid: string): Promise<(StruggleData & { id: string })[]> {
     try {
       const db = firebaseAdmin.getFirestore();
       
@@ -124,10 +124,14 @@ export class SyncService {
         .where('projectId', '==', projectId);
 
       const userSnapshot = await userStruggleQuery.get();
-      const struggles: StruggleData[] = [];
+      const struggles: (StruggleData & { id: string })[] = [];
 
       userSnapshot.forEach((doc) => {
-        struggles.push({ id: doc.id, ...doc.data() } as StruggleData);
+        const data = doc.data();
+        struggles.push({
+          ...data,
+          id: doc.id
+        } as StruggleData & { id: string });
       });
 
       // Get project-wide struggles (if user is collaborator)
@@ -147,7 +151,11 @@ export class SyncService {
           const projectSnapshot = await projectStruggleQuery.get();
           
           projectSnapshot.forEach((doc) => {
-            struggles.push({ id: doc.id, ...doc.data() } as StruggleData);
+            const data = doc.data();
+            struggles.push({
+              ...data,
+              id: doc.id
+            } as StruggleData & { id: string });
           });
         }
       }

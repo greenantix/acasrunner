@@ -174,7 +174,7 @@ export function useFirebaseAuth() {
     return user;
   }, [idToken]);
 
-  const getAuthHeaders = useCallback(() => {
+  const getAuthHeaders = useCallback((): Record<string, string> => {
     if (!idToken) {
       return {};
     }

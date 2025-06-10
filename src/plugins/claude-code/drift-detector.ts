@@ -350,9 +350,9 @@ export class DriftDetector extends EventEmitter {
         }
       } catch (error) {
         // npm outdated returns non-zero exit code when outdated packages exist
-        if (error.stdout) {
+        if (error && typeof error === 'object' && 'stdout' in error) {
           try {
-            const outdatedData = JSON.parse(error.stdout);
+            const outdatedData = JSON.parse(error.stdout as string);
             report.outdatedDependencies = Object.entries(outdatedData).map(([name, info]: [string, any]) => ({
               name,
               current: info.current,

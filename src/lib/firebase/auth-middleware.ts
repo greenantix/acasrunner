@@ -35,7 +35,11 @@ export async function requireAuth(request: NextRequest): Promise<AuthenticatedUs
   const profile = await firebaseAdmin.getUserProfile(userInfo.uid);
   
   return {
-    ...userInfo,
+    uid: userInfo.uid,
+    email: userInfo.email,
+    emailVerified: (userInfo as any).email_verified || false,
+    provider: (userInfo as any).provider_id,
+    customClaims: (userInfo as any).custom_claims || {},
     profile,
   };
 }
@@ -51,7 +55,7 @@ export async function requireVerifiedEmail(request: NextRequest): Promise<Authen
 }
 
 export function withAuth(handler: (request: NextRequest, user: AuthenticatedUser) => Promise<NextResponse>) {
-  return async (request: NextRequest) => {
+  return async (request: NextRequest, context?: any) => {
     try {
       const user = await requireAuth(request);
       return await handler(request, user);
